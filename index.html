@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SV Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg2: #f5f5f4; --bg3: #e8e8e6;
+      --text: #1a1a1a; --text2: #6b6b68; --text3: #a0a09d;
+      --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+      --r-md: 8px; --r-lg: 12px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+    button { font-family: inherit; cursor: pointer; }
+    input, select { font-family: inherit; font-size: 13px; color: var(--text); background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--r-md); padding: 5px 9px; outline: none; }
+    input:focus, select:focus { border-color: #378ADD; }
+
+    .app-header { position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 0 1rem; }
+    .app-header-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 52px; }
+    .app-logo { font-size: 15px; font-weight: 500; }
+    .nav-tabs { display: flex; gap: 2px; }
+    .nav-tab { padding: 6px 14px; border-radius: var(--r-md); border: none; background: transparent; color: var(--text2); font-size: 13px; transition: background 0.1s; }
+    .nav-tab:hover { background: var(--bg2); }
+    .nav-tab.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+
+    .t-bar { background: var(--bg2); border-bottom: 0.5px solid var(--border); padding: 0 1rem; }
+    .t-bar-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; gap: 8px; height: 40px; overflow-x: auto; }
+    .t-label { font-size: 11px; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
+    .t-chip { padding: 3px 10px; border-radius: 14px; border: 0.5px solid var(--border2); background: var(--bg); color: var(--text2); font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+    .t-chip:hover { background: var(--bg3); }
+    .t-chip.active { background: #185FA5; color: #E6F1FB; border-color: #378ADD; }
+    .t-chip-add { padding: 3px 10px; border-radius: 14px; border: 0.5px dashed var(--border2); background: transparent; color: var(--text3); font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+    .t-chip-add:hover { color: var(--text2); }
+
+    .page { display: none; max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .page.active { display: block; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
+    .page-title { font-size: 18px; font-weight: 500; }
+
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: var(--r-md); border: 0.5px solid var(--border2); background: transparent; color: var(--text2); font-size: 13px; transition: background 0.1s; }
+    .btn:hover { background: var(--bg2); }
+    .btn-primary { background: #185FA5; color: #E6F1FB; border-color: #378ADD; }
+    .btn-primary:hover { background: #0C447C; }
+    .btn-tw { background: transparent; color: #1DA1F2; border-color: #1DA1F2; }
+    .btn-tw:hover { background: rgba(29,161,242,0.08); }
+
+    .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px; line-height: 1.5; }
+    .b-win  { background: #EAF3DE; color: #3B6D11; }
+    .b-lose { background: #FCEBEB; color: #A32D2D; }
+    .b-opp  { background: #F1EFE8; color: #5F5E5A; }
+    .b-deck { background: #E6F1FB; color: #0C447C; }
+    .b-mode-bo1  { background: #E6F1FB; color: #0C447C; font-size: 10px; }
+    .b-mode-bo3  { background: #EEEDFE; color: #3C3489; font-size: 10px; }
+    .b-mode-rank { background: #EAF3DE; color: #3B6D11; font-size: 10px; }
+
+    .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 1rem 1.25rem; }
+    .sec { margin-bottom: 1.5rem; }
+    .sec-title { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--bg2); color: var(--text2); font-size: 11px; font-weight: 500; padding: 7px 10px; border: 0.5px solid var(--border); text-align: center; white-space: nowrap; }
+    td { border: 0.5px solid var(--border); padding: 7px 10px; text-align: center; vertical-align: middle; }
+    .tbl-wrap { border: 0.5px solid var(--border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 1rem; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1rem; }
+    .stat-card { background: var(--bg2); border-radius: var(--r-md); padding: 10px 12px; text-align: center; }
+    .stat-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+    .stat-val { font-size: 18px; font-weight: 500; }
+
+    .add-form { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 12px; margin-bottom: 1rem; display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+    .fg { display: flex; flex-direction: column; gap: 3px; }
+    .fg label { font-size: 11px; color: var(--text2); }
+    .fg select, .fg input { height: 30px; font-size: 12px; }
+
+    .del-btn { background: none; border: none; color: var(--text3); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .del-btn:hover { color: #A32D2D; background: #FCEBEB; }
+
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 13px; }
+
+    .opp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px,1fr)); gap: 8px; }
+    .opp-card { background: var(--bg2); border-radius: var(--r-md); padding: 10px 12px; }
+    .opp-card-name { font-size: 12px; font-weight: 500; margin-bottom: 5px; }
+    .opp-card-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin: 2px 0; }
+
+    .bo3-set { border: 0.5px solid var(--border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 10px; }
+    .bo3-set-hd { background: var(--bg2); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 500; border-bottom: 0.5px solid var(--border); }
+    .bo3-game-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
+    .bo3-game-row:last-child { border-bottom: none; }
+    .g-label { font-size: 11px; color: var(--text3); width: 28px; flex-shrink: 0; }
+
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+    .modal-bg.open { display: flex; }
+    .modal-box { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--r-lg); padding: 1.25rem; width: 320px; max-width: 92vw; }
+    .modal-title { font-size: 15px; font-weight: 500; margin-bottom: 14px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .mfg { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .mfg label { font-size: 12px; color: var(--text2); }
+    .mfg input, .mfg select { width: 100%; }
+
+    .deck-entry { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 0.5px solid var(--border); }
+    .deck-entry:last-child { border-bottom: none; }
+    .deck-entry-info { display: flex; align-items: center; gap: 8px; }
+    .deck-name-inp { font-size: 13px; height: 28px; width: 160px; }
+
+    .analysis-sec-title { font-size: 14px; font-weight: 500; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); }
+    .stat-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1rem; }
+    @media(max-width:600px){ .stat-grid { grid-template-columns: repeat(2,1fr); } .stat-grid-3 { grid-template-columns: repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-inner">
+    <span class="app-logo">SV Tracker</span>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-page="home">ホーム</button>
+      <button class="nav-tab" data-page="record">記録</button>
+      <button class="nav-tab" data-page="analysis">分析</button>
+      <button class="nav-tab" data-page="settings">設定</button>
+    </nav>
+  </div>
+</header>
+
+<div class="t-bar">
+  <div class="t-bar-inner">
+    <span class="t-label">大会:</span>
+    <div id="t-chips" style="display:contents"></div>
+  </div>
+</div>
+
+<div id="page-home" class="page active">
+  <div class="page-header">
+    <h1 class="page-title">ホーム</h1>
+    <button class="btn btn-primary" onclick="openNewTournament()">+ 新しい大会</button>
+  </div>
+  <div id="home-content"></div>
+</div>
+
+<div id="page-record" class="page">
+  <div class="page-header">
+    <h1 class="page-title">対戦記録</h1>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-tw" onclick="shareTweet()">𝕏 ツイート</button>
+      <button class="btn" onclick="saveImage()">📷 画像保存</button>
+    </div>
+  </div>
+  <div id="record-add-form"></div>
+  <div id="record-stats"></div>
+  <div id="record-table"></div>
+</div>
+
+<div id="page-analysis" class="page">
+  <div class="page-header"><h1 class="page-title">分析</h1></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+    <label style="font-size:12px;color:var(--text2)">モード</label>
+    <select id="an-mode" onchange="renderAnalysis()" style="height:30px;font-size:12px">
+      <option value="all">すべて</option>
+      <option value="bo1">2デッキBO1</option>
+      <option value="bo3">2デッキBO3</option>
+      <option value="rank">ランクBO1</option>
+    </select>
+    <label style="font-size:12px;color:var(--text2)">大会</label>
+    <select id="an-tournament" onchange="renderAnalysis()" style="height:30px;font-size:12px">
+      <option value="">すべての大会</option>
+    </select>
+  </div>
+  <div id="analysis-content"></div>
+</div>
+
+<div id="page-settings" class="page">
+  <div class="page-header"><h1 class="page-title">設定</h1></div>
+  <div class="sec">
+    <div class="sec-title">デッキを追加</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+      <div class="fg"><label>クラス</label>
+        <select id="new-cls" style="height:30px">
+          <option>エルフ</option><option>ロイヤル</option><option>ウィッチ</option>
+          <option>ドラゴン</option><option>ナイトメア</option><option>ビショップ</option><option>ネメシス</option>
+        </select>
+      </div>
+      <div class="fg"><label>デッキ名（省略可）</label><input id="new-dname" type="text" placeholder="省略するとクラス名" style="width:180px;height:30px" /></div>
+      <button class="btn btn-primary" onclick="addDeck()">追加</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden"><div id="deck-list"></div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-title">データ管理</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="exportData()">JSONエクスポート</button>
+      <button class="btn" onclick="document.getElementById('import-file').click()">JSONインポート</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)" />
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const CLASSES = ['エルフ','ロイヤル','ウィッチ','ドラゴン','ナイトメア','ビショップ','ネメシス'];
+const KEY = 'sv_tracker_v1';
+let S = null;
+
+function loadState() {
+  try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch { S = fresh(); }
+  if (!S.tournaments) S = fresh();
+}
+function fresh() { return { tournaments:[], decks:[], nextTId:1, nextDId:1, nextRId:1 }; }
+function save() { localStorage.setItem(KEY, JSON.stringify(S)); }
+
+// ---- NAV ----
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.page === page));
+  document.getElementById('page-'+page).classList.add('active');
+  if (page==='home') renderHome();
+  if (page==='record') renderRecord();
+  if (page==='analysis') renderAnalysis();
+  if (page==='settings') renderSettings();
+}
+document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => showPage(t.dataset.page)));
+
+// ---- TOURNAMENT BAR ----
+let currentTId = null;
+function renderTBar() {
+  const el = document.getElementById('t-chips');
+  el.innerHTML = '';
+  S.tournaments.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'tournament-chip t-chip' + (t.id===currentTId?' active':'');
+    b.textContent = t.name;
+    b.onclick = () => { currentTId = t.id; renderTBar(); showPage('record'); };
+    el.appendChild(b);
+  });
+  const add = document.createElement('button');
+  add.className = 't-chip-add';
+  add.textContent = '+ 新しい大会';
+  add.onclick = openNewTournament;
+  el.appendChild(add);
+}
+
+// ---- MODAL ----
+function openModal(html) {
+  document.getElementById('modal-box').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+
+// ---- NEW TOURNAMENT ----
+function openNewTournament() {
+  openModal(`
+    <div class="modal-title">新しい大会を作成</div>
+    <div class="mfg"><label>大会名</label><input id="m-tname" type="text" placeholder="例: 第1回〇〇杯" /></div>
+    <div class="mfg"><label>モード</label>
+      <select id="m-tmode">
+        <option value="bo1">2デッキBO1</option>
+        <option value="bo3">2デッキBO3</option>
+        <option value="rank">ランクマッチBO1</option>
+      </select>
+    </div>
+    <div class="mfg"><label>日付</label><input id="m-tdate" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="createTournament()">作成</button>
+    </div>`);
+}
+function createTournament() {
+  const name = document.getElementById('m-tname').value.trim() || '新しい大会';
+  const mode = document.getElementById('m-tmode').value;
+  const date = document.getElementById('m-tdate').value;
+  const t = { id: S.nextTId++, name, mode, date, records: [] };
+  S.tournaments.push(t);
+  save();
+  currentTId = t.id;
+  closeModal();
+  renderTBar();
+  showPage('record');
+}
+
+// ---- HOME ----
+function renderHome() {
+  const el = document.getElementById('home-content');
+  if (!S.tournaments.length) {
+    el.innerHTML = '<div class="empty"><p style="margin-bottom:12px">大会が登録されていません</p><button class="btn btn-primary" onclick="openNewTournament()">+ 新しい大会を作成</button></div>';
+    return;
+  }
+  el.innerHTML = S.tournaments.slice().reverse().map(t => {
+    const recs = t.records || [];
+    const wins = recs.filter(r => (r.result||r.setResult)==='win').length;
+    const mL = {bo1:'2デッキBO1',bo3:'2デッキBO3',rank:'ランクBO1'}[t.mode]||t.mode;
+    const mC = {bo1:'b-mode-bo1',bo3:'b-mode-bo3',rank:'b-mode-rank'}[t.mode]||'';
+    return `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:14px;font-weight:500">${t.name}</span>
+          <span class="badge ${mC}">${mL}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2)">${t.date||''} &nbsp; ${recs.length}試合 &nbsp; ${recs.length?wl(wins,recs.length-wins):'-'}</div>
+      </div>
+      <button class="btn" onclick="goRecord(${t.id})">記録を見る</button>
+    </div>`;
+  }).join('');
+}
+function goRecord(id) { currentTId = id; renderTBar(); showPage('record'); }
+
+// ---- RECORD ----
+function renderRecord() {
+  const af = document.getElementById('record-add-form');
+  const tbl = document.getElementById('record-table');
+  const stats = document.getElementById('record-stats');
+  const t = S.tournaments.find(x => x.id===currentTId);
+  if (!t) { af.innerHTML=''; tbl.innerHTML='<div class="empty">上のバーから大会を選択してください</div>'; stats.innerHTML=''; return; }
+  const refresh = () => { renderRecordStats(stats,t); renderRecordTable(tbl,t,refresh); };
+  if (t.mode==='bo1') renderBO1Form(af, t, refresh);
+  else if (t.mode==='bo3') renderBO3Form(af, t, refresh);
+  else renderRankForm(af, t, refresh);
+  renderRecordTable(tbl, t, refresh);
+  renderRecordStats(stats, t);
+}
+
+function renderRecordStats(el, t) {
+  const recs = t.records||[];
+  if (!recs.length) { el.innerHTML=''; return; }
+  const wins = recs.filter(r=>(r.result||r.setResult)==='win').length;
+  const total = recs.length;
+  el.innerHTML = `<div class="stat-grid" style="margin-bottom:1rem">
+    <div class="stat-card"><div class="stat-label">総試合</div><div class="stat-val">${total}</div></div>
+    <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div></div>
+    <div class="stat-card"><div class="stat-label">勝率</div><div class="stat-val">${Math.round(wins/total*100)}%</div></div>
+  </div>`;
+}
+
+function renderRecordTable(el, t, refresh) {
+  if (t.mode==='bo1') renderBO1Table(el, t, refresh);
+  else if (t.mode==='bo3') renderBO3Table(el, t, refresh);
+  else renderRankTable(el, t, refresh);
+}
+
+// ---- BO1 ----
+function renderBO1Form(el, t, refresh) {
+  if (!S.decks.length) { el.innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:1rem">先に設定からデッキを追加してください</p>'; return; }
+  el.innerHTML = `<div class="add-form">
+    <div class="fg"><label>自分のデッキ</label><select id="b1-my">${deckOpts()}</select></div>
+    <div class="fg"><label>相手D1</label><select id="b1-o1" onchange="updateBO1Pick()">${clsOpts()}</select></div>
+    <div class="fg"><label>相手D2</label><select id="b1-o2" onchange="updateBO1Pick()">${clsOpts()}</select></div>
+    <div class="fg"><label>相手の選出</label><select id="b1-pick"></select></div>
+    <div class="fg"><label>結果</label><select id="b1-res"><option value="win">勝</option><option value="lose">負</option></select></div>
+    <button class="btn btn-primary" onclick="addBO1(${t.id})">追加</button>
+  </div>`;
+  updateBO1Pick();
+}
+function updateBO1Pick() {
+  const o1 = document.getElementById('b1-o1')?.value;
+  const o2 = document.getElementById('b1-o2')?.value;
+  const pick = document.getElementById('b1-pick');
+  if (!pick) return;
+  pick.innerHTML = [...new Set([o1,o2])].map(c=>`<option>${c}</option>`).join('');
+}
+function addBO1(tid) {
+  const myDeckId = Number(document.getElementById('b1-my').value);
+  if (!myDeckId) return alert('デッキを選択してください');
+  const r = { id:S.nextRId++, mode:'bo1', myDeckId,
+    oppClass1: document.getElementById('b1-o1').value,
+    oppClass2: document.getElementById('b1-o2').value,
+    oppPick: document.getElementById('b1-pick').value,
+    result: document.getElementById('b1-res').value,
+    createdAt: Date.now() };
+  S.tournaments.find(t=>t.id===tid).records.push(r);
+  save();
+  const t = S.tournaments.find(t=>t.id===tid);
+  const refresh = () => { renderRecordStats(document.getElementById('record-stats'),t); renderRecordTable(document.getElementById('record-table'),t,refresh); };
+  refresh();
+}
+function renderBO1Table(el, t, refresh) {
+  const recs = (t.records||[]).filter(r=>r.mode==='bo1');
+  if (!recs.length) { el.innerHTML='<div class="empty">記録がありません</div>'; return; }
+  let h = `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手の持ち込み</th><th>相手の選出</th><th>結果</th><th></th></tr></thead><tbody>`;
+  recs.forEach((r,i) => {
+    const d = getDeck(r.myDeckId);
+    h += `<tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><span class="badge b-deck">${d?.name||'?'}</span></td>
+      <td><span class="badge b-opp">${r.oppClass1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${r.oppClass2}</span></td>
+      <td><span class="badge b-opp">${r.oppPick}</span></td>
+      <td><span class="badge b-${r.result}">${r.result==='win'?'勝':'負'}</span></td>
+      <td><button class="del-btn" onclick="delRecord(${t.id},${r.id})">✕</button></td>
+    </tr>`;
+  });
+  h += '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
+// ---- BO3 ----
+function renderBO3Form(el, t, refresh) {
+  if (!S.decks.length) { el.innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:1rem">先に設定からデッキを追加してください</p>'; return; }
+  el.innerHTML = `<div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:12px;margin-bottom:1rem">
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">セット情報</div>
+    <div class="add-form" style="margin-bottom:8px">
+      <div class="fg"><label>自分D1</label><select id="b3-my1">${deckOpts()}</select></div>
+      <div class="fg"><label>自分D2</label><select id="b3-my2">${deckOpts()}</select></div>
+      <div class="fg"><label>相手D1</label><select id="b3-o1">${clsOpts()}</select></div>
+      <div class="fg"><label>相手D2</label><select id="b3-o2">${clsOpts()}</select></div>
+      <div class="fg"><label>セット結果</label><select id="b3-sres"><option value="win">勝</option><option value="lose">負</option></select></div>
+    </div>
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">各ゲーム</div>
+    <div id="b3-games"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" onclick="addBO3Game()">+ ゲームを追加</button>
+      <button class="btn btn-primary" onclick="addBO3(${t.id})">セットを記録</button>
+    </div>
+  </div>`;
+  addBO3Game();
+}
+let bo3GameCount = 0;
+function addBO3Game() {
+  if (bo3GameCount >= 3) return;
+  bo3GameCount++;
+  const el = document.getElementById('b3-games');
+  const row = document.createElement('div');
+  row.className = 'bo3-game-row';
+  row.dataset.gn = bo3GameCount;
+  row.innerHTML = `<span class="g-label">G${bo3GameCount}</span>
+    <select class="g-my" style="height:28px;font-size:12px">${deckOpts()}</select>
+    <span style="font-size:11px;color:var(--text3)">vs</span>
+    <select class="g-opp" style="height:28px;font-size:12px">${clsOpts()}</select>
+    <select class="g-res" style="height:28px;font-size:12px"><option value="win">勝</option><option value="lose">負</option></select>`;
+  el.appendChild(row);
+}
+function addBO3(tid) {
+  const my1 = Number(document.getElementById('b3-my1').value);
+  const my2 = Number(document.getElementById('b3-my2').value);
+  if (!my1||!my2) return alert('自分のデッキを選択してください');
+  const games = Array.from(document.querySelectorAll('[data-gn]')).map(row => ({
+    myDeckId: Number(row.querySelector('.g-my').value),
+    oppClass: row.querySelector('.g-opp').value,
+    result: row.querySelector('.g-res').value,
+  }));
+  const r = { id:S.nextRId++, mode:'bo3', myDeck1Id:my1, myDeck2Id:my2,
+    oppClass1: document.getElementById('b3-o1').value,
+    oppClass2: document.getElementById('b3-o2').value,
+    games, setResult: document.getElementById('b3-sres').value,
+    createdAt: Date.now() };
+  S.tournaments.find(t=>t.id===tid).records.push(r);
+  save(); bo3GameCount = 0;
+  renderRecord();
+}
+function renderBO3Table(el, t, refresh) {
+  const recs = (t.records||[]).filter(r=>r.mode==='bo3');
+  if (!recs.length) { el.innerHTML='<div class="empty">記録がありません</div>'; return; }
+  let h = '';
+  recs.forEach((r,i) => {
+    const gw = r.games.filter(g=>g.result==='win').length;
+    const gl = r.games.filter(g=>g.result==='lose').length;
+    h += `<div class="bo3-set">
+      <div class="bo3-set-hd">
+        <span>#${i+1} &nbsp; <span class="badge b-opp">${r.oppClass1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${r.oppClass2}</span></span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span class="badge b-${r.setResult}">セット ${r.setResult==='win'?'勝':'負'}</span>
+          <span style="font-size:11px;color:var(--text3)">${gw}勝${gl}敗</span>
+          <button class="del-btn" onclick="delRecord(${t.id},${r.id})">✕</button>
+        </span>
+      </div>`;
+    r.games.forEach((g,gi) => {
+      const d = getDeck(g.myDeckId);
+      h += `<div class="bo3-game-row">
+        <span class="g-label">G${gi+1}</span>
+        <span class="badge b-deck">${d?.name||'?'}</span>
+        <span style="font-size:11px;color:var(--text3)">vs</span>
+        <span class="badge b-opp">${g.oppClass}</span>
+        <span class="badge b-${g.result}">${g.result==='win'?'勝':'負'}</span>
+      </div>`;
+    });
+    h += '</div>';
+  });
+  el.innerHTML = h;
+}
+
+// ---- RANK ----
+function renderRankForm(el, t, refresh) {
+  if (!S.decks.length) { el.innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:1rem">先に設定からデッキを追加してください</p>'; return; }
+  el.innerHTML = `<div class="add-form">
+    <div class="fg"><label>自分のデッキ</label><select id="rk-my">${deckOpts()}</select></div>
+    <div class="fg"><label>相手のクラス</label><select id="rk-opp">${clsOpts()}</select></div>
+    <div class="fg"><label>結果</label><select id="rk-res"><option value="win">勝</option><option value="lose">負</option></select></div>
+    <button class="btn btn-primary" onclick="addRank(${t.id})">追加</button>
+  </div>`;
+}
+function addRank(tid) {
+  const myDeckId = Number(document.getElementById('rk-my').value);
+  if (!myDeckId) return alert('デッキを選択してください');
+  const r = { id:S.nextRId++, mode:'rank', myDeckId,
+    oppClass: document.getElementById('rk-opp').value,
+    result: document.getElementById('rk-res').value,
+    createdAt: Date.now() };
+  S.tournaments.find(t=>t.id===tid).records.push(r);
+  save(); renderRecord();
+}
+function renderRankTable(el, t, refresh) {
+  const recs = (t.records||[]).filter(r=>r.mode==='rank');
+  if (!recs.length) { el.innerHTML='<div class="empty">記録がありません</div>'; return; }
+  let h = `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手のクラス</th><th>結果</th><th></th></tr></thead><tbody>`;
+  recs.forEach((r,i) => {
+    const d = getDeck(r.myDeckId);
+    h += `<tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><span class="badge b-deck">${d?.name||'?'}</span></td>
+      <td><span class="badge b-opp">${r.oppClass}</span></td>
+      <td><span class="badge b-${r.result}">${r.result==='win'?'勝':'負'}</span></td>
+      <td><button class="del-btn" onclick="delRecord(${t.id},${r.id})">✕</button></td>
+    </tr>`;
+  });
+  h += '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
+// ---- DELETE RECORD ----
+function delRecord(tid, rid) {
+  const t = S.tournaments.find(x=>x.id===tid);
+  t.records = t.records.filter(r=>r.id!==rid);
+  save(); renderRecord();
+}
+
+// ---- ANALYSIS ----
+function renderAnalysis() {
+  const mode = document.getElementById('an-mode').value;
+  const tidRaw = document.getElementById('an-tournament').value;
+  const tid = tidRaw ? Number(tidRaw) : null;
+  const prev = document.getElementById('an-tournament').value;
+  document.getElementById('an-tournament').innerHTML = '<option value="">すべての大会</option>' +
+    S.tournaments.map(t=>`<option value="${t.id}"${String(t.id)===prev?' selected':''}>${t.name}</option>`).join('');
+
+  let recs = [];
+  S.tournaments.forEach(t => {
+    (t.records||[]).forEach(r => {
+      if (tid && t.id!==tid) return;
+      if (mode!=='all' && r.mode!==mode) return;
+      recs.push(r);
+    });
+  });
+
+  const el = document.getElementById('analysis-content');
+  if (!recs.length) { el.innerHTML='<div class="empty">分析データがありません</div>'; return; }
+
+  const total = recs.length;
+  const wins = recs.filter(r=>(r.result||r.setResult)==='win').length;
+  const byDeck={}, byOppCls={}, byCombo={};
+
+  recs.forEach(r => {
+    const res = r.result||r.setResult;
+    const dids = r.myDeckId ? [r.myDeckId] : [r.myDeck1Id,r.myDeck2Id].filter(Boolean);
+    dids.forEach(id => { if(!byDeck[id])byDeck[id]={w:0,l:0}; res==='win'?byDeck[id].w++:byDeck[id].l++; });
+    const opps = r.oppPick?[r.oppPick]:r.oppClass?[r.oppClass]:(r.games||[]).map(g=>g.oppClass);
+    opps.forEach(c => { if(!byOppCls[c])byOppCls[c]={w:0,l:0}; res==='win'?byOppCls[c].w++:byOppCls[c].l++; });
+    if (r.oppClass1&&r.oppClass2) {
+      const k=[r.oppClass1,r.oppClass2].sort().join('+');
+      if(!byCombo[k])byCombo[k]={w:0,l:0}; res==='win'?byCombo[k].w++:byCombo[k].l++;
+    }
+  });
+
+  let h = `<div class="sec"><div class="analysis-sec-title">総合</div>
+    <div class="stat-grid-3">
+      <div class="stat-card"><div class="stat-label">総試合</div><div class="stat-val">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div></div>
+      <div class="stat-card"><div class="stat-label">勝率</div><div class="stat-val">${pct(wins,total)}</div></div>
+    </div></div>`;
+
+  if (Object.keys(byDeck).length) {
+    h += `<div class="sec"><div class="analysis-sec-title">自分のデッキ別</div><div class="tbl-wrap"><table>
+      <thead><tr><th style="text-align:left">デッキ</th><th>試合</th><th>戦績</th><th>勝率</th></tr></thead><tbody>`;
+    Object.entries(byDeck).forEach(([id,d])=>{
+      const dk=getDeck(Number(id)); const t2=d.w+d.l;
+      h+=`<tr><td style="text-align:left"><span class="badge b-deck">${dk?.name||'?'}</span></td><td>${t2}</td><td>${wl(d.w,d.l)}</td><td>${pct(d.w,t2)}</td></tr>`;
+    });
+    h += '</tbody></table></div></div>';
+  }
+
+  if (Object.keys(byOppCls).length) {
+    h += `<div class="sec"><div class="analysis-sec-title">相手クラス別</div><div class="opp-grid">`;
+    Object.entries(byOppCls).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([c,d])=>{
+      const t2=d.w+d.l;
+      h+=`<div class="opp-card"><div class="opp-card-name">${c}</div>
+        <div class="opp-card-row"><span>戦績</span><span style="font-weight:500">${wl(d.w,d.l)}</span></div>
+        <div class="opp-card-row"><span>勝率</span><span style="font-weight:500">${pct(d.w,t2)}</span></div></div>`;
+    });
+    h += '</div></div>';
+  }
+
+  if (Object.keys(byCombo).length) {
+    h += `<div class="sec"><div class="analysis-sec-title">相手の持ち込み組み合わせ別</div><div class="tbl-wrap"><table>
+      <thead><tr><th style="text-align:left">持ち込み</th><th>試合</th><th>戦績</th><th>勝率</th></tr></thead><tbody>`;
+    Object.entries(byCombo).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([k,d])=>{
+      const [c1,c2]=k.split('+'); const t2=d.w+d.l;
+      h+=`<tr><td style="text-align:left"><span class="badge b-opp">${c1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${c2}</span></td><td>${t2}</td><td>${wl(d.w,d.l)}</td><td>${pct(d.w,t2)}</td></tr>`;
+    });
+    h += '</tbody></table></div></div>';
+  }
+
+  el.innerHTML = h;
+}
+
+// ---- SETTINGS ----
+function renderSettings() { renderDeckList(); }
+function renderDeckList() {
+  const el = document.getElementById('deck-list');
+  if (!S.decks.length) { el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 12px">デッキがありません</div>'; return; }
+  el.innerHTML = S.decks.map(d=>`
+    <div class="deck-entry">
+      <div class="deck-entry-info">
+        <span class="badge b-opp">${d.className}</span>
+        <input class="deck-name-inp" type="text" value="${d.name}" onchange="updateDeckName(${d.id},this.value)" />
+      </div>
+      <button class="del-btn" onclick="delDeck(${d.id})">✕</button>
+    </div>`).join('');
+}
+function addDeck() {
+  const cls = document.getElementById('new-cls').value;
+  const nameInput = document.getElementById('new-dname').value.trim();
+  const same = S.decks.filter(d=>d.className===cls);
+  const name = nameInput || (same.length===0 ? cls : `${cls}(${same.length})`);
+  S.decks.push({ id:S.nextDId++, className:cls, name });
+  save(); document.getElementById('new-dname').value=''; renderDeckList();
+}
+function updateDeckName(id, name) { const d=S.decks.find(x=>x.id===id); if(d){d.name=name;save();} }
+function delDeck(id) { S.decks=S.decks.filter(d=>d.id!==id); save(); renderDeckList(); }
+
+// ---- SHARE ----
+function shareTweet() {
+  const t = S.tournaments.find(x=>x.id===currentTId);
+  if (!t) return;
+  const recs=t.records||[]; const wins=recs.filter(r=>(r.result||r.setResult)==='win').length;
+  const text=`【${t.name}】\n戦績: ${wl(wins,recs.length-wins)} (${recs.length}試合)\n#シャドウバース #ShadowverseConnect`;
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,'_blank');
+}
+function saveImage() {
+  if (!window.html2canvas) { alert('html2canvasが読み込まれていません'); return; }
+  const t = S.tournaments.find(x=>x.id===currentTId);
+  html2canvas(document.getElementById('record-table'),{backgroundColor:'#ffffff',scale:2}).then(c=>{
+    const a=document.createElement('a'); a.href=c.toDataURL('image/png');
+    a.download=`${t?.name||'記録'}.png`; a.click();
+  });
+}
+
+// ---- DATA ----
+function exportData() {
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`sv_tracker_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(input) {
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try { S={...fresh(),...JSON.parse(e.target.result)}; save(); renderTBar(); renderSettings(); alert('インポートしました'); }
+    catch { alert('読み込みに失敗しました'); }
+  };
+  reader.readAsText(file);
+}
+
+// ---- HELPERS ----
+function getDeck(id) { return S.decks.find(d=>d.id===id)||null; }
+function deckOpts() { return S.decks.map(d=>`<option value="${d.id}">${d.name}</option>`).join(''); }
+function clsOpts() { return CLASSES.map(c=>`<option>${c}</option>`).join(''); }
+function wl(w,l) { return `${w}勝${l}敗`; }
+function pct(w,t) { return t>0?Math.round(w/t*100)+'%':'-'; }
+
+// ---- INIT ----
+loadState();
+renderTBar();
+renderHome();
+</script>
+</body>
+</html>
