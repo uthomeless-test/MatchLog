@@ -359,10 +359,8 @@ function createSession(){
   S.sessions.push(s); save(); currentSId=s.id; closeModal(); renderTBar(); showPage('record');
 }
 
-function getOrCreateDeck(cls,name){
+function getOrCreateDeck(cls, name){
   const finalName=name||cls;
-  const existing=S.decks.find(d=>d.className===cls&&d.name===finalName);
-  if(existing)return existing.id;
   const d={id:S.nextDId++,className:cls,name:finalName};
   S.decks.push(d); save(); return d.id;
 }
@@ -880,16 +878,12 @@ function importData(input){
       const sidOffset=S.nextSId;
       const didOffset=S.nextDId;
       const ridOffset=S.nextRId;
-      // デッキマップ: インポート側id → 既存/新規id
+      // デッキマップ: インポート側id → 新規id（セッションをまたいで使い回さない）
       const deckIdMap={};
       (imported.decks||[]).forEach(d=>{
-        const existing=S.decks.find(x=>x.className===d.className&&x.name===d.name);
-        if(existing){ deckIdMap[d.id]=existing.id; }
-        else{
-          const newId=S.nextDId++;
-          deckIdMap[d.id]=newId;
-          S.decks.push({...d,id:newId});
-        }
+        const newId=S.nextDId++;
+        deckIdMap[d.id]=newId;
+        S.decks.push({...d,id:newId});
       });
       // セッションをマージ
       src.forEach(s=>{
