@@ -48,8 +48,6 @@
     .btn-primary:hover { background: #0C447C; }
     .btn-tw { background: transparent; color: #1DA1F2; border-color: #1DA1F2; }
     .btn-tw:hover { background: rgba(29,161,242,0.08); }
-    .btn-danger { color: #A32D2D; border-color: rgba(163,45,45,0.3); }
-    .btn-danger:hover { background: #FCEBEB; }
     .btn-sm { padding: 4px 10px; font-size: 12px; }
 
     .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px; line-height: 1.5; }
@@ -58,23 +56,21 @@
     .b-opp  { background: #F1EFE8; color: #5F5E5A; }
     .b-deck { background: var(--blue-light); color: #0C447C; }
     .b-mode-bo1  { background: var(--blue-light); color: #0C447C; font-size: 10px; padding: 2px 7px; }
-    .b-mode-bo3  { background: #EEEDFE; color: #3C3489; font-size: 10px; padding: 2px 7px; }
     .b-mode-rank { background: #EAF3DE; color: #3B6D11; font-size: 10px; padding: 2px 7px; }
 
     .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 1rem 1.25rem; }
     .sec { margin-bottom: 1.5rem; }
-    .sec-title { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
 
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th { background: var(--bg2); color: var(--text2); font-size: 11px; font-weight: 500; padding: 7px 10px; border: 0.5px solid var(--border); text-align: center; white-space: nowrap; }
     td { border: 0.5px solid var(--border); padding: 7px 8px; text-align: center; vertical-align: middle; }
     .tbl-wrap { border: 0.5px solid var(--border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 1rem; }
 
-    .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1rem; }
-    .stat-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1rem; }
+    .stat-grid { display: grid; gap: 8px; margin-bottom: 1rem; }
     .stat-card { background: var(--bg2); border-radius: var(--r-md); padding: 10px 12px; text-align: center; }
     .stat-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
     .stat-val { font-size: 18px; font-weight: 500; }
+    .stat-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
 
     .add-form { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 12px; margin-bottom: 1rem; display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
     .fg { display: flex; flex-direction: column; gap: 3px; }
@@ -92,11 +88,6 @@
     .opp-card-name { font-size: 12px; font-weight: 500; margin-bottom: 5px; }
     .opp-card-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin: 2px 0; }
 
-    .bo3-set { border: 0.5px solid var(--border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 10px; }
-    .bo3-set-hd { background: var(--bg2); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 500; border-bottom: 0.5px solid var(--border); gap: 8px; flex-wrap: wrap; }
-    .bo3-game-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
-    .bo3-game-row:last-child { border-bottom: none; }
-    .g-label { font-size: 11px; color: var(--text3); width: 28px; flex-shrink: 0; }
     .memo-cell { font-size: 11px; color: var(--text2); text-align: left; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-start; justify-content: center; padding: 60px 1rem 1rem; overflow-y: auto; }
@@ -117,11 +108,7 @@
     .analysis-sec-title { font-size: 14px; font-weight: 500; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); }
     .home-card-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 
-    @media(max-width:600px){
-      .stat-grid { grid-template-columns: repeat(2,1fr); }
-      .stat-grid-3 { grid-template-columns: repeat(2,1fr); }
-      .nav-tab { padding: 6px 10px; font-size: 12px; }
-    }
+    @media(max-width:600px){ .nav-tab { padding: 6px 10px; font-size: 12px; } }
   </style>
 </head>
 <body>
@@ -162,8 +149,10 @@
     </div>
   </div>
   <div id="record-add-form"></div>
-  <div id="record-stats"></div>
-  <div id="record-table"></div>
+  <div id="record-snapshot">
+    <div id="record-stats"></div>
+    <div id="record-table"></div>
+  </div>
 </div>
 
 <div id="page-analysis" class="page">
@@ -173,7 +162,6 @@
     <select id="an-mode" onchange="renderAnalysis()" style="height:30px;font-size:12px">
       <option value="all">すべて</option>
       <option value="bo1">2デッキBO1</option>
-      <option value="bo3">2デッキBO3</option>
       <option value="rank">ランクBO1</option>
     </select>
     <label style="font-size:12px;color:var(--text2)">セッション</label>
@@ -187,10 +175,13 @@
 <div id="page-settings" class="page">
   <div class="page-header"><h1 class="page-title">設定</h1></div>
   <div class="sec">
-    <div class="sec-title">デッキを追加</div>
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">デッキを追加</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
       <div class="fg"><label>クラス</label>
-        <select id="new-cls" style="height:30px">${CLASSES_HTML()}</select>
+        <select id="new-cls" style="height:30px">
+          <option>エルフ</option><option>ロイヤル</option><option>ウィッチ</option>
+          <option>ドラゴン</option><option>ナイトメア</option><option>ビショップ</option><option>ネメシス</option>
+        </select>
       </div>
       <div class="fg"><label>デッキ名（省略可）</label>
         <input id="new-dname" type="text" style="width:180px;height:30px" />
@@ -200,7 +191,7 @@
     <div class="card" style="padding:0;overflow:hidden"><div id="deck-list"></div></div>
   </div>
   <div class="sec">
-    <div class="sec-title">データ管理</div>
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">データ管理</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" onclick="exportData()">JSONエクスポート</button>
       <button class="btn" onclick="document.getElementById('import-file').click()">JSONインポート</button>
@@ -215,75 +206,56 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-const CLASSES = ['エルフ','ロイヤル','ウィッチ','ドラゴン','ナイトメア','ビショップ','ネメシス'];
-const MODE_LABEL = { bo1:'2デッキBO1', bo3:'2デッキBO3', rank:'ランクBO1' };
-const MODE_CLS   = { bo1:'b-mode-bo1', bo3:'b-mode-bo3', rank:'b-mode-rank' };
-const KEY = 'sv_matchlog_v1';
-let S = null;
+const CLASSES=['エルフ','ロイヤル','ウィッチ','ドラゴン','ナイトメア','ビショップ','ネメシス'];
+const MODE_LABEL={bo1:'2デッキBO1',rank:'ランクBO1'};
+const MODE_CLS={bo1:'b-mode-bo1',rank:'b-mode-rank'};
+const KEY='sv_matchlog_v1';
+let S=null;
 
-function CLASSES_HTML(){ return CLASSES.map(c=>`<option>${c}</option>`).join(''); }
-function loadState(){
-  try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch { S = fresh(); }
-  if (!S.sessions) S = fresh();
-}
-function fresh(){ return { sessions:[], decks:[], nextSId:1, nextDId:1, nextRId:1 }; }
-function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+function clsOpts(sel){ return CLASSES.map(c=>`<option${c===sel?' selected':''}>${c}</option>`).join(''); }
+function loadState(){ try{S=JSON.parse(localStorage.getItem(KEY))||fresh();}catch{S=fresh();} if(!S.sessions)S=fresh(); }
+function fresh(){ return {sessions:[],decks:[],nextSId:1,nextDId:1,nextRId:1}; }
+function save(){ localStorage.setItem(KEY,JSON.stringify(S)); }
 
-// ---- NAV ----
 function showPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===page));
   document.getElementById('page-'+page).classList.add('active');
-  if(page==='home') renderHome();
-  if(page==='record') renderRecord();
-  if(page==='analysis') renderAnalysis();
-  if(page==='settings') renderSettings();
+  if(page==='home')renderHome();
+  if(page==='record')renderRecord();
+  if(page==='analysis')renderAnalysis();
+  if(page==='settings')renderSettings();
 }
 document.querySelectorAll('.nav-tab').forEach(t=>t.addEventListener('click',()=>showPage(t.dataset.page)));
 
-// ---- SESSION BAR ----
-let currentSId = null;
+let currentSId=null;
 function renderTBar(){
-  const el = document.getElementById('t-chips');
-  el.innerHTML = '';
+  const el=document.getElementById('t-chips'); el.innerHTML='';
   [...S.sessions].reverse().forEach(s=>{
-    const b = document.createElement('button');
-    b.className = 't-chip'+(s.id===currentSId?' active':'');
-    b.textContent = s.name;
-    b.onclick = ()=>{ currentSId=s.id; renderTBar(); showPage('record'); };
+    const b=document.createElement('button');
+    b.className='t-chip'+(s.id===currentSId?' active':'');
+    b.textContent=s.name;
+    b.onclick=()=>{currentSId=s.id;renderTBar();showPage('record');};
     el.appendChild(b);
   });
-  const add = document.createElement('button');
-  add.className = 't-chip-add';
-  add.textContent = '+ 新しい記録';
-  add.onclick = openNewSession;
+  const add=document.createElement('button');
+  add.className='t-chip-add'; add.textContent='+ 新しい記録'; add.onclick=openNewSession;
   el.appendChild(add);
 }
 
-// ---- MODAL ----
 function openModal(html){ document.getElementById('modal-box').innerHTML=html; document.getElementById('modal-bg').classList.add('open'); }
 function closeModal(){ document.getElementById('modal-bg').classList.remove('open'); document.getElementById('modal-box').innerHTML=''; }
 
-// ---- NEW SESSION ----
 function openNewSession(){
-  openModal(`
-    <div class="modal-title">新しい記録を作成</div>
-    <div class="mfg">
-      <label>名前</label>
-      <input id="m-sname" type="text" placeholder="ランクマッチ" />
-    </div>
-    <div class="mfg">
-      <label>モード</label>
+  openModal(`<div class="modal-title">新しい記録を作成</div>
+    <div class="mfg"><label>名前</label><input id="m-sname" type="text" placeholder="ランクマッチ" /></div>
+    <div class="mfg"><label>モード</label>
       <select id="m-smode" onchange="updateSessionDeckFields()">
         <option value="rank" selected>ランクマッチBO1</option>
         <option value="bo1">2デッキBO1</option>
-        <option value="bo3">2デッキBO3</option>
       </select>
     </div>
-    <div class="mfg">
-      <label>日付</label>
-      <input id="m-sdate" type="date" value="${new Date().toISOString().slice(0,10)}" />
-    </div>
+    <div class="mfg"><label>日付</label><input id="m-sdate" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
     <hr class="mdivider">
     <div id="m-deck-fields"></div>
     <div class="modal-footer">
@@ -294,65 +266,49 @@ function openNewSession(){
 }
 
 function updateSessionDeckFields(){
-  const mode = document.getElementById('m-smode')?.value;
-  const el = document.getElementById('m-deck-fields');
-  if(!el) return;
+  const mode=document.getElementById('m-smode')?.value;
+  const el=document.getElementById('m-deck-fields'); if(!el)return;
   if(mode==='rank'){
-    el.innerHTML = `<div class="mfg"><label>使用デッキ（クラス）</label><select id="m-dcls1">${CLASSES_HTML()}</select></div>
+    el.innerHTML=`<div class="mfg"><label>使用デッキ クラス</label><select id="m-dcls1">${clsOpts('エルフ')}</select></div>
       <div class="mfg"><label>デッキ名（省略可）</label><input id="m-dname1" type="text" /></div>`;
   } else {
-    el.innerHTML = `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">使用デッキ（2つ）</div>
+    el.innerHTML=`<div style="font-size:12px;color:var(--text2);margin-bottom:6px">使用デッキ（2つ）</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="mfg"><label>デッキ1 クラス</label><select id="m-dcls1">${CLASSES_HTML()}</select></div>
+        <div class="mfg"><label>デッキ1 クラス</label><select id="m-dcls1">${clsOpts('エルフ')}</select></div>
         <div class="mfg"><label>デッキ1 名前</label><input id="m-dname1" type="text" /></div>
-        <div class="mfg"><label>デッキ2 クラス</label><select id="m-dcls2">${CLASSES_HTML()}</select></div>
+        <div class="mfg"><label>デッキ2 クラス</label><select id="m-dcls2">${clsOpts('ロイヤル')}</select></div>
         <div class="mfg"><label>デッキ2 名前</label><input id="m-dname2" type="text" /></div>
       </div>`;
   }
 }
 
 function createSession(){
-  const name = document.getElementById('m-sname').value.trim() || 'ランクマッチ';
-  const mode = document.getElementById('m-smode').value;
-  const date = document.getElementById('m-sdate').value;
-  const deckIds = [];
-  const cls1 = document.getElementById('m-dcls1').value;
-  const dname1 = document.getElementById('m-dname1')?.value.trim();
-  deckIds.push(getOrCreateDeck(cls1, dname1));
-  if(mode!=='rank'){
-    const cls2 = document.getElementById('m-dcls2').value;
-    const dname2 = document.getElementById('m-dname2')?.value.trim();
-    deckIds.push(getOrCreateDeck(cls2, dname2));
-  }
-  const s = { id:S.nextSId++, name, mode, date, deckIds, records:[] };
-  S.sessions.push(s);
-  save();
-  currentSId = s.id;
-  closeModal();
-  renderTBar();
-  showPage('record');
+  const name=document.getElementById('m-sname').value.trim()||'ランクマッチ';
+  const mode=document.getElementById('m-smode').value;
+  const date=document.getElementById('m-sdate').value;
+  const deckIds=[];
+  deckIds.push(getOrCreateDeck(document.getElementById('m-dcls1').value, document.getElementById('m-dname1')?.value.trim()));
+  if(mode!=='rank') deckIds.push(getOrCreateDeck(document.getElementById('m-dcls2').value, document.getElementById('m-dname2')?.value.trim()));
+  const s={id:S.nextSId++,name,mode,date,deckIds,records:[]};
+  S.sessions.push(s); save(); currentSId=s.id; closeModal(); renderTBar(); showPage('record');
 }
 
-function getOrCreateDeck(cls, name){
-  const same = S.decks.filter(d=>d.className===cls);
-  const finalName = name || (same.length===0 ? cls : `${cls}(${same.length})`);
-  const existing = S.decks.find(d=>d.className===cls && d.name===finalName);
-  if(existing) return existing.id;
-  const d = { id:S.nextDId++, className:cls, name:finalName };
+function getOrCreateDeck(cls,name){
+  const same=S.decks.filter(d=>d.className===cls);
+  const finalName=name||(same.length===0?cls:`${cls}(${same.length})`);
+  const existing=S.decks.find(d=>d.className===cls&&d.name===finalName);
+  if(existing)return existing.id;
+  const d={id:S.nextDId++,className:cls,name:finalName};
   S.decks.push(d); save(); return d.id;
 }
 
-// ---- HOME ----
 function renderHome(){
-  const el = document.getElementById('home-content');
-  if(!S.sessions.length){
-    el.innerHTML='<div class="empty"><p style="margin-bottom:12px">記録がありません</p><button class="btn btn-primary" onclick="openNewSession()">+ 新しい記録を作成</button></div>';
-    return;
-  }
-  const sorted = [...S.sessions].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
-  el.innerHTML = sorted.map(s=>{
+  const el=document.getElementById('home-content');
+  if(!S.sessions.length){ el.innerHTML='<div class="empty"><p style="margin-bottom:12px">記録がありません</p><button class="btn btn-primary" onclick="openNewSession()">+ 新しい記録を作成</button></div>'; return; }
+  const sorted=[...S.sessions].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
+  el.innerHTML=sorted.map(s=>{
     const recs=s.records||[];
-    const wins=recs.filter(r=>(r.result||r.setResult)==='win').length;
+    const wins=recs.filter(r=>r.result==='win').length;
     return `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
@@ -373,10 +329,8 @@ function renderHome(){
 function goRecord(id){ currentSId=id; renderTBar(); showPage('record'); }
 
 function openEditSession(id){
-  const s = S.sessions.find(x=>x.id===id);
-  if(!s) return;
-  openModal(`
-    <div class="modal-title">記録を編集</div>
+  const s=S.sessions.find(x=>x.id===id); if(!s)return;
+  openModal(`<div class="modal-title">記録を編集</div>
     <div class="mfg"><label>名前</label><input id="m-ename" type="text" value="${s.name}" /></div>
     <div class="mfg"><label>日付</label><input id="m-edate" type="date" value="${s.date||''}" /></div>
     <div class="modal-footer">
@@ -385,62 +339,66 @@ function openEditSession(id){
     </div>`);
 }
 function saveEditSession(id){
-  const s = S.sessions.find(x=>x.id===id);
-  if(!s) return;
-  s.name = document.getElementById('m-ename').value.trim() || s.name;
-  s.date = document.getElementById('m-edate').value;
+  const s=S.sessions.find(x=>x.id===id); if(!s)return;
+  s.name=document.getElementById('m-ename').value.trim()||s.name;
+  s.date=document.getElementById('m-edate').value;
   save(); closeModal(); renderHome(); renderTBar();
+  if(currentSId===id) document.getElementById('record-title').textContent=s.name;
 }
 function deleteSession(id){
-  if(!confirm('この記録を削除しますか？')) return;
-  S.sessions = S.sessions.filter(s=>s.id!==id);
-  if(currentSId===id) currentSId=null;
+  if(!confirm('この記録を削除しますか？'))return;
+  S.sessions=S.sessions.filter(s=>s.id!==id);
+  if(currentSId===id)currentSId=null;
   save(); renderHome(); renderTBar();
 }
 
-// ---- RECORD PAGE ----
 function renderRecord(){
-  const s = S.sessions.find(x=>x.id===currentSId);
-  const af = document.getElementById('record-add-form');
-  const tbl = document.getElementById('record-table');
-  const stats = document.getElementById('record-stats');
-  const title = document.getElementById('record-title');
+  const s=S.sessions.find(x=>x.id===currentSId);
+  const af=document.getElementById('record-add-form');
+  const tbl=document.getElementById('record-table');
+  const stats=document.getElementById('record-stats');
+  const title=document.getElementById('record-title');
   if(!s){ af.innerHTML=''; tbl.innerHTML='<div class="empty">上のバーからセッションを選択するか、新しい記録を作成してください</div>'; stats.innerHTML=''; title.textContent='記録'; return; }
-  title.textContent = s.name;
-  const refresh = ()=>{ renderRecordStats(stats,s); renderRecordTable(tbl,s,refresh); };
+  title.textContent=s.name;
+  const refresh=()=>{ renderRecordStats(stats,s); renderRecordTable(tbl,s); };
   if(s.mode==='bo1') renderBO1Form(af,s,refresh);
-  else if(s.mode==='bo3') renderBO3Form(af,s,refresh);
   else renderRankForm(af,s,refresh);
-  renderRecordTable(tbl,s,refresh);
+  renderRecordTable(tbl,s);
   renderRecordStats(stats,s);
 }
 
 function renderRecordStats(el,s){
   const recs=s.records||[];
   if(!recs.length){ el.innerHTML=''; return; }
-  const wins=recs.filter(r=>(r.result||r.setResult)==='win').length;
+  const wins=recs.filter(r=>r.result==='win').length;
   const total=recs.length;
-  el.innerHTML=`<div class="stat-grid" style="margin-bottom:1rem">
-    <div class="stat-card"><div class="stat-label">総試合</div><div class="stat-val">${total}</div></div>
-    <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div></div>
-    <div class="stat-card"><div class="stat-label">勝率</div><div class="stat-val">${Math.round(wins/total*100)}%</div></div>
+  const byDeck={};
+  recs.forEach(r=>{ if(!byDeck[r.myDeckId])byDeck[r.myDeckId]={w:0,l:0}; r.result==='win'?byDeck[r.myDeckId].w++:byDeck[r.myDeckId].l++; });
+  const deckCards=Object.entries(byDeck).map(([id,d])=>{
+    const dk=getDeck(Number(id)); const t2=d.w+d.l;
+    return `<div class="stat-card"><div class="stat-label">${dk?.name||'?'}</div><div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t2)}</div></div>`;
+  }).join('');
+  const cols=Math.min(1+Object.keys(byDeck).length,4);
+  el.innerHTML=`<div class="stat-grid" style="grid-template-columns:repeat(${cols},1fr);margin-bottom:1rem">
+    <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div><div class="stat-sub">${total}試合 / ${pct(wins,total)}</div></div>
+    ${deckCards}
   </div>`;
 }
 
-function renderRecordTable(el,s,refresh){
-  if(s.mode==='bo1') renderBO1Table(el,s,refresh);
-  else if(s.mode==='bo3') renderBO3Table(el,s,refresh);
-  else renderRankTable(el,s,refresh);
+function renderRecordTable(el,s){
+  if(s.mode==='bo1')renderBO1Table(el,s);
+  else renderRankTable(el,s);
 }
 
-// ---- BO1 ----
-function sessionDeckOpts(s){ return (s.deckIds||[]).map(id=>{ const d=getDeck(id); return d?`<option value="${d.id}">${d.name}</option>`:''; }).join(''); }
+function sessionDeckOpts(s,defaultIdx){
+  return (s.deckIds||[]).map((id,i)=>{ const d=getDeck(id); return d?`<option value="${d.id}"${i===defaultIdx?' selected':''}>${d.name}</option>`:''; }).join('');
+}
 
 function renderBO1Form(el,s,refresh){
   el.innerHTML=`<div class="add-form">
-    <div class="fg"><label>自分のデッキ</label><select id="b1-my">${sessionDeckOpts(s)}</select></div>
-    <div class="fg"><label>相手D1</label><select id="b1-o1" onchange="updateBO1Pick()">${CLASSES_HTML()}</select></div>
-    <div class="fg"><label>相手D2</label><select id="b1-o2" onchange="updateBO1Pick()">${CLASSES_HTML()}</select></div>
+    <div class="fg"><label>自分のデッキ</label><select id="b1-my">${sessionDeckOpts(s,0)}</select></div>
+    <div class="fg"><label>相手D1</label><select id="b1-o1" onchange="updateBO1Pick()">${clsOpts('エルフ')}</select></div>
+    <div class="fg"><label>相手D2</label><select id="b1-o2" onchange="updateBO1Pick()">${clsOpts('ロイヤル')}</select></div>
     <div class="fg"><label>相手の選出</label><select id="b1-pick"></select></div>
     <div class="fg"><label>結果</label><select id="b1-res"><option value="win">勝</option><option value="lose">負</option></select></div>
     <button class="btn btn-primary" onclick="addBO1(${s.id})">追加</button>
@@ -450,210 +408,91 @@ function renderBO1Form(el,s,refresh){
 function updateBO1Pick(){
   const o1=document.getElementById('b1-o1')?.value;
   const o2=document.getElementById('b1-o2')?.value;
-  const pick=document.getElementById('b1-pick');
-  if(!pick||!o1) return;
+  const pick=document.getElementById('b1-pick'); if(!pick||!o1)return;
   pick.innerHTML=[...new Set([o1,o2])].map(c=>`<option>${c}</option>`).join('');
 }
 function addBO1(sid){
   const myDeckId=Number(document.getElementById('b1-my').value);
-  if(!myDeckId) return alert('デッキを選択してください');
-  const r={ id:S.nextRId++, mode:'bo1', myDeckId,
+  if(!myDeckId)return alert('デッキを選択してください');
+  const r={id:S.nextRId++,mode:'bo1',myDeckId,
     oppClass1:document.getElementById('b1-o1').value,
     oppClass2:document.getElementById('b1-o2').value,
     oppPick:document.getElementById('b1-pick').value,
     result:document.getElementById('b1-res').value,
-    memo:'', createdAt:Date.now() };
-  S.sessions.find(s=>s.id===sid).records.push(r);
-  save(); renderRecord();
+    memo:'',createdAt:Date.now()};
+  S.sessions.find(s=>s.id===sid).records.push(r); save(); renderRecord();
 }
-function renderBO1Table(el,s,refresh){
+function renderBO1Table(el,s){
   const recs=(s.records||[]).filter(r=>r.mode==='bo1');
   if(!recs.length){ el.innerHTML='<div class="empty">記録がありません</div>'; return; }
   let h=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手の持ち込み</th><th>相手の選出</th><th>結果</th><th style="text-align:left">メモ</th><th></th></tr></thead><tbody>`;
-  recs.forEach((r,i)=>{
-    const d=getDeck(r.myDeckId);
-    h+=`<tr>
-      <td style="color:var(--text3)">${i+1}</td>
-      <td><span class="badge b-deck">${d?.name||'?'}</span></td>
+  recs.forEach((r,i)=>{ const d=getDeck(r.myDeckId);
+    h+=`<tr><td style="color:var(--text3)">${i+1}</td><td><span class="badge b-deck">${d?.name||'?'}</span></td>
       <td><span class="badge b-opp">${r.oppClass1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${r.oppClass2}</span></td>
       <td><span class="badge b-opp">${r.oppPick}</span></td>
       <td><span class="badge b-${r.result}">${r.result==='win'?'勝':'負'}</span></td>
       <td class="memo-cell">${r.memo||''}</td>
-      <td style="white-space:nowrap">
-        <button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})" title="編集">✎</button>
-        <button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})" title="削除">✕</button>
-      </td>
-    </tr>`;
+      <td style="white-space:nowrap"><button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})">✎</button><button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})">✕</button></td></tr>`;
   });
-  h+='</tbody></table></div>';
-  el.innerHTML=h;
+  h+='</tbody></table></div>'; el.innerHTML=h;
 }
 
-// ---- BO3 ----
-function renderBO3Form(el,s,refresh){
-  el.innerHTML=`<div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:12px;margin-bottom:1rem">
-    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">セット情報</div>
-    <div class="add-form" style="margin-bottom:8px">
-      <div class="fg"><label>自分D1</label><select id="b3-my1">${sessionDeckOpts(s)}</select></div>
-      <div class="fg"><label>自分D2</label><select id="b3-my2">${sessionDeckOpts(s)}</select></div>
-      <div class="fg"><label>相手D1</label><select id="b3-o1">${CLASSES_HTML()}</select></div>
-      <div class="fg"><label>相手D2</label><select id="b3-o2">${CLASSES_HTML()}</select></div>
-      <div class="fg"><label>セット結果</label><select id="b3-sres"><option value="win">勝</option><option value="lose">負</option></select></div>
-    </div>
-    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">各ゲーム</div>
-    <div id="b3-games"></div>
-    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-      <button class="btn" onclick="addBO3Game()">+ ゲームを追加</button>
-      <button class="btn btn-primary" onclick="addBO3(${s.id})">セットを記録</button>
-    </div>
-  </div>`;
-  bo3GameCount=0; addBO3Game();
-}
-let bo3GameCount=0;
-function addBO3Game(){
-  if(bo3GameCount>=3) return;
-  bo3GameCount++;
-  const el=document.getElementById('b3-games');
-  const row=document.createElement('div');
-  row.className='bo3-game-row'; row.dataset.gn=bo3GameCount;
-  const s=S.sessions.find(x=>x.id===currentSId);
-  row.innerHTML=`<span class="g-label">G${bo3GameCount}</span>
-    <select class="g-my" style="height:28px;font-size:12px">${s?sessionDeckOpts(s):''}</select>
-    <span style="font-size:11px;color:var(--text3)">vs</span>
-    <select class="g-opp" style="height:28px;font-size:12px">${CLASSES_HTML()}</select>
-    <select class="g-res" style="height:28px;font-size:12px"><option value="win">勝</option><option value="lose">負</option></select>`;
-  el.appendChild(row);
-}
-function addBO3(sid){
-  const my1=Number(document.getElementById('b3-my1').value);
-  const my2=Number(document.getElementById('b3-my2').value);
-  if(!my1||!my2) return alert('自分のデッキを選択してください');
-  const games=Array.from(document.querySelectorAll('[data-gn]')).map(row=>({
-    myDeckId:Number(row.querySelector('.g-my').value),
-    oppClass:row.querySelector('.g-opp').value,
-    result:row.querySelector('.g-res').value,
-  }));
-  const r={ id:S.nextRId++, mode:'bo3', myDeck1Id:my1, myDeck2Id:my2,
-    oppClass1:document.getElementById('b3-o1').value,
-    oppClass2:document.getElementById('b3-o2').value,
-    games, setResult:document.getElementById('b3-sres').value,
-    memo:'', createdAt:Date.now() };
-  S.sessions.find(s=>s.id===sid).records.push(r);
-  save(); bo3GameCount=0; renderRecord();
-}
-function renderBO3Table(el,s,refresh){
-  const recs=(s.records||[]).filter(r=>r.mode==='bo3');
-  if(!recs.length){ el.innerHTML='<div class="empty">記録がありません</div>'; return; }
-  let h='';
-  recs.forEach((r,i)=>{
-    const gw=r.games.filter(g=>g.result==='win').length;
-    const gl=r.games.filter(g=>g.result==='lose').length;
-    h+=`<div class="bo3-set">
-      <div class="bo3-set-hd">
-        <span>#${i+1} &nbsp; <span class="badge b-opp">${r.oppClass1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${r.oppClass2}</span></span>
-        <span style="display:flex;align-items:center;gap:8px">
-          <span class="badge b-${r.setResult}">セット ${r.setResult==='win'?'勝':'負'}</span>
-          <span style="font-size:11px;color:var(--text3)">${gw}勝${gl}敗</span>
-          <button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})" title="編集">✎</button>
-          <button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})" title="削除">✕</button>
-        </span>
-      </div>`;
-    r.games.forEach((g,gi)=>{
-      const d=getDeck(g.myDeckId);
-      h+=`<div class="bo3-game-row"><span class="g-label">G${gi+1}</span><span class="badge b-deck">${d?.name||'?'}</span><span style="font-size:11px;color:var(--text3)">vs</span><span class="badge b-opp">${g.oppClass}</span><span class="badge b-${g.result}">${g.result==='win'?'勝':'負'}</span></div>`;
-    });
-    if(r.memo) h+=`<div style="padding:6px 12px;font-size:11px;color:var(--text2);border-top:0.5px solid var(--border)">${r.memo}</div>`;
-    h+='</div>';
-  });
-  el.innerHTML=h;
-}
-
-// ---- RANK ----
 function renderRankForm(el,s,refresh){
   el.innerHTML=`<div class="add-form">
-    <div class="fg"><label>自分のデッキ</label><select id="rk-my">${sessionDeckOpts(s)}</select></div>
-    <div class="fg"><label>相手のクラス</label><select id="rk-opp">${CLASSES_HTML()}</select></div>
+    <div class="fg"><label>自分のデッキ</label><select id="rk-my">${sessionDeckOpts(s,0)}</select></div>
+    <div class="fg"><label>相手のクラス</label><select id="rk-opp">${clsOpts('エルフ')}</select></div>
     <div class="fg"><label>結果</label><select id="rk-res"><option value="win">勝</option><option value="lose">負</option></select></div>
     <button class="btn btn-primary" onclick="addRank(${s.id})">追加</button>
   </div>`;
 }
 function addRank(sid){
   const myDeckId=Number(document.getElementById('rk-my').value);
-  if(!myDeckId) return alert('デッキを選択してください');
-  const r={ id:S.nextRId++, mode:'rank', myDeckId,
+  if(!myDeckId)return alert('デッキを選択してください');
+  const r={id:S.nextRId++,mode:'rank',myDeckId,
     oppClass:document.getElementById('rk-opp').value,
     result:document.getElementById('rk-res').value,
-    memo:'', createdAt:Date.now() };
-  S.sessions.find(s=>s.id===sid).records.push(r);
-  save(); renderRecord();
+    memo:'',createdAt:Date.now()};
+  S.sessions.find(s=>s.id===sid).records.push(r); save(); renderRecord();
 }
-function renderRankTable(el,s,refresh){
+function renderRankTable(el,s){
   const recs=(s.records||[]).filter(r=>r.mode==='rank');
   if(!recs.length){ el.innerHTML='<div class="empty">記録がありません</div>'; return; }
   let h=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手のクラス</th><th>結果</th><th style="text-align:left">メモ</th><th></th></tr></thead><tbody>`;
-  recs.forEach((r,i)=>{
-    const d=getDeck(r.myDeckId);
-    h+=`<tr>
-      <td style="color:var(--text3)">${i+1}</td>
-      <td><span class="badge b-deck">${d?.name||'?'}</span></td>
+  recs.forEach((r,i)=>{ const d=getDeck(r.myDeckId);
+    h+=`<tr><td style="color:var(--text3)">${i+1}</td><td><span class="badge b-deck">${d?.name||'?'}</span></td>
       <td><span class="badge b-opp">${r.oppClass}</span></td>
       <td><span class="badge b-${r.result}">${r.result==='win'?'勝':'負'}</span></td>
       <td class="memo-cell">${r.memo||''}</td>
-      <td style="white-space:nowrap">
-        <button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})" title="編集">✎</button>
-        <button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})" title="削除">✕</button>
-      </td>
-    </tr>`;
+      <td style="white-space:nowrap"><button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})">✎</button><button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})">✕</button></td></tr>`;
   });
-  h+='</tbody></table></div>';
-  el.innerHTML=h;
+  h+='</tbody></table></div>'; el.innerHTML=h;
 }
 
-// ---- EDIT / DELETE RECORD ----
 function openEditRecord(sid,rid){
   const s=S.sessions.find(x=>x.id===sid);
-  const r=s?.records.find(x=>x.id===rid);
-  if(!r) return;
+  const r=s?.records.find(x=>x.id===rid); if(!r)return;
   if(r.mode==='bo1'){
     openModal(`<div class="modal-title">記録を編集</div>
       <div class="mfg"><label>自分のデッキ</label><select id="er-my">${sessionDeckOpts(s)}</select></div>
-      <div class="mfg"><label>相手D1</label><select id="er-o1">${CLASSES_HTML()}</select></div>
-      <div class="mfg"><label>相手D2</label><select id="er-o2">${CLASSES_HTML()}</select></div>
-      <div class="mfg"><label>相手の選出</label><select id="er-pick">${[...new Set([r.oppClass1,r.oppClass2])].map(c=>`<option>${c}</option>`).join('')}</select></div>
-      <div class="mfg"><label>結果</label><select id="er-res"><option value="win" ${r.result==='win'?'selected':''}>勝</option><option value="lose" ${r.result==='lose'?'selected':''}>負</option></select></div>
+      <div class="mfg"><label>相手D1</label><select id="er-o1">${clsOpts(r.oppClass1)}</select></div>
+      <div class="mfg"><label>相手D2</label><select id="er-o2">${clsOpts(r.oppClass2)}</select></div>
+      <div class="mfg"><label>相手の選出</label><select id="er-pick">${[...new Set([r.oppClass1,r.oppClass2])].map(c=>`<option${c===r.oppPick?' selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="mfg"><label>結果</label><select id="er-res"><option value="win"${r.result==='win'?' selected':''}>勝</option><option value="lose"${r.result==='lose'?' selected':''}>負</option></select></div>
       <div class="mfg"><label>メモ</label><textarea id="er-memo">${r.memo||''}</textarea></div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeModal()">キャンセル</button>
-        <button class="btn btn-primary" onclick="saveEditBO1(${sid},${rid})">保存</button>
-      </div>`);
+      <div class="modal-footer"><button class="btn" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveEditBO1(${sid},${rid})">保存</button></div>`);
     document.getElementById('er-my').value=r.myDeckId;
-    document.getElementById('er-o1').value=r.oppClass1;
-    document.getElementById('er-o2').value=r.oppClass2;
-  } else if(r.mode==='rank'){
+  } else {
     openModal(`<div class="modal-title">記録を編集</div>
       <div class="mfg"><label>自分のデッキ</label><select id="er-my">${sessionDeckOpts(s)}</select></div>
-      <div class="mfg"><label>相手のクラス</label><select id="er-opp">${CLASSES_HTML()}</select></div>
-      <div class="mfg"><label>結果</label><select id="er-res"><option value="win" ${r.result==='win'?'selected':''}>勝</option><option value="lose" ${r.result==='lose'?'selected':''}>負</option></select></div>
+      <div class="mfg"><label>相手のクラス</label><select id="er-opp">${clsOpts(r.oppClass)}</select></div>
+      <div class="mfg"><label>結果</label><select id="er-res"><option value="win"${r.result==='win'?' selected':''}>勝</option><option value="lose"${r.result==='lose'?' selected':''}>負</option></select></div>
       <div class="mfg"><label>メモ</label><textarea id="er-memo">${r.memo||''}</textarea></div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeModal()">キャンセル</button>
-        <button class="btn btn-primary" onclick="saveEditRank(${sid},${rid})">保存</button>
-      </div>`);
+      <div class="modal-footer"><button class="btn" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveEditRank(${sid},${rid})">保存</button></div>`);
     document.getElementById('er-my').value=r.myDeckId;
-    document.getElementById('er-opp').value=r.oppClass;
-  } else if(r.mode==='bo3'){
-    openModal(`<div class="modal-title">記録を編集</div>
-      <div class="mfg"><label>セット結果</label><select id="er-sres"><option value="win" ${r.setResult==='win'?'selected':''}>勝</option><option value="lose" ${r.setResult==='lose'?'selected':''}>負</option></select></div>
-      <div class="mfg"><label>メモ</label><textarea id="er-memo">${r.memo||''}</textarea></div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeModal()">キャンセル</button>
-        <button class="btn btn-primary" onclick="saveEditBO3(${sid},${rid})">保存</button>
-      </div>`);
   }
 }
 function saveEditBO1(sid,rid){
-  const s=S.sessions.find(x=>x.id===sid);
-  const r=s.records.find(x=>x.id===rid);
+  const r=S.sessions.find(x=>x.id===sid).records.find(x=>x.id===rid);
   r.myDeckId=Number(document.getElementById('er-my').value);
   r.oppClass1=document.getElementById('er-o1').value;
   r.oppClass2=document.getElementById('er-o2').value;
@@ -663,147 +502,107 @@ function saveEditBO1(sid,rid){
   save(); closeModal(); renderRecord();
 }
 function saveEditRank(sid,rid){
-  const s=S.sessions.find(x=>x.id===sid);
-  const r=s.records.find(x=>x.id===rid);
+  const r=S.sessions.find(x=>x.id===sid).records.find(x=>x.id===rid);
   r.myDeckId=Number(document.getElementById('er-my').value);
   r.oppClass=document.getElementById('er-opp').value;
   r.result=document.getElementById('er-res').value;
   r.memo=document.getElementById('er-memo').value;
   save(); closeModal(); renderRecord();
 }
-function saveEditBO3(sid,rid){
-  const s=S.sessions.find(x=>x.id===sid);
-  const r=s.records.find(x=>x.id===rid);
-  r.setResult=document.getElementById('er-sres').value;
-  r.memo=document.getElementById('er-memo').value;
-  save(); closeModal(); renderRecord();
-}
 function delRecord(sid,rid){
-  if(!confirm('この記録を削除しますか？')) return;
+  if(!confirm('この記録を削除しますか？'))return;
   const s=S.sessions.find(x=>x.id===sid);
-  s.records=s.records.filter(r=>r.id!==rid);
-  save(); renderRecord();
+  s.records=s.records.filter(r=>r.id!==rid); save(); renderRecord();
 }
 
-// ---- ANALYSIS ----
 function renderAnalysis(){
   const mode=document.getElementById('an-mode').value;
-  const tidRaw=document.getElementById('an-session').value;
-  const tid=tidRaw?Number(tidRaw):null;
   const prev=document.getElementById('an-session').value;
   document.getElementById('an-session').innerHTML='<option value="">すべて</option>'+
     S.sessions.map(s=>`<option value="${s.id}"${String(s.id)===prev?' selected':''}>${s.name}</option>`).join('');
-
+  const tid=document.getElementById('an-session').value?Number(document.getElementById('an-session').value):null;
   let recs=[];
   S.sessions.forEach(s=>{
     (s.records||[]).forEach(r=>{
-      if(tid&&s.id!==tid) return;
-      if(mode!=='all'&&r.mode!==mode) return;
+      if(tid&&s.id!==tid)return;
+      if(mode!=='all'&&r.mode!==mode)return;
       recs.push(r);
     });
   });
-
   const el=document.getElementById('analysis-content');
   if(!recs.length){ el.innerHTML='<div class="empty">分析データがありません</div>'; return; }
-
-  const total=recs.length;
-  const wins=recs.filter(r=>(r.result||r.setResult)==='win').length;
+  const total=recs.length, wins=recs.filter(r=>r.result==='win').length;
   const byDeck={}, byOppCls={}, byCombo={};
-
   recs.forEach(r=>{
-    const res=r.result||r.setResult;
-    const dids=r.myDeckId?[r.myDeckId]:[r.myDeck1Id,r.myDeck2Id].filter(Boolean);
-    dids.forEach(id=>{ if(!byDeck[id])byDeck[id]={w:0,l:0}; res==='win'?byDeck[id].w++:byDeck[id].l++; });
-    const opps=r.oppPick?[r.oppPick]:r.oppClass?[r.oppClass]:(r.games||[]).map(g=>g.oppClass);
+    const res=r.result;
+    if(!byDeck[r.myDeckId])byDeck[r.myDeckId]={w:0,l:0};
+    res==='win'?byDeck[r.myDeckId].w++:byDeck[r.myDeckId].l++;
+    const opps=r.oppPick?[r.oppPick]:r.oppClass?[r.oppClass]:[];
     opps.forEach(c=>{ if(!byOppCls[c])byOppCls[c]={w:0,l:0}; res==='win'?byOppCls[c].w++:byOppCls[c].l++; });
-    if(r.oppClass1&&r.oppClass2){
-      const k=[r.oppClass1,r.oppClass2].sort().join('+');
-      if(!byCombo[k])byCombo[k]={w:0,l:0}; res==='win'?byCombo[k].w++:byCombo[k].l++;
-    }
+    if(r.oppClass1&&r.oppClass2){ const k=[r.oppClass1,r.oppClass2].sort().join('+'); if(!byCombo[k])byCombo[k]={w:0,l:0}; res==='win'?byCombo[k].w++:byCombo[k].l++; }
   });
-
+  const cols=Math.min(1+Object.keys(byDeck).length,4);
   let h=`<div class="sec"><div class="analysis-sec-title">総合</div>
-    <div class="stat-grid-3">
-      <div class="stat-card"><div class="stat-label">総試合</div><div class="stat-val">${total}</div></div>
-      <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div></div>
-      <div class="stat-card"><div class="stat-label">勝率</div><div class="stat-val">${pct(wins,total)}</div></div>
+    <div class="stat-grid" style="grid-template-columns:repeat(${cols},1fr)">
+      <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div><div class="stat-sub">${total}試合 / ${pct(wins,total)}</div></div>
+      ${Object.entries(byDeck).map(([id,d])=>{ const dk=getDeck(Number(id)),t2=d.w+d.l; return `<div class="stat-card"><div class="stat-label">${dk?.name||'?'}</div><div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t2)}</div></div>`; }).join('')}
     </div></div>`;
-
-  if(Object.keys(byDeck).length){
-    h+=`<div class="sec"><div class="analysis-sec-title">自分のデッキ別</div><div class="tbl-wrap"><table>
-      <thead><tr><th style="text-align:left">デッキ</th><th>試合</th><th>戦績</th><th>勝率</th></tr></thead><tbody>`;
-    Object.entries(byDeck).forEach(([id,d])=>{
-      const dk=getDeck(Number(id)); const t2=d.w+d.l;
-      h+=`<tr><td style="text-align:left"><span class="badge b-deck">${dk?.name||'?'}</span></td><td>${t2}</td><td>${wl(d.w,d.l)}</td><td>${pct(d.w,t2)}</td></tr>`;
-    });
-    h+='</tbody></table></div></div>';
-  }
-
   if(Object.keys(byOppCls).length){
     h+=`<div class="sec"><div class="analysis-sec-title">相手クラス別</div><div class="opp-grid">`;
-    Object.entries(byOppCls).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([c,d])=>{
-      const t2=d.w+d.l;
-      h+=`<div class="opp-card"><div class="opp-card-name">${c}</div>
-        <div class="opp-card-row"><span>戦績</span><span style="font-weight:500">${wl(d.w,d.l)}</span></div>
-        <div class="opp-card-row"><span>勝率</span><span style="font-weight:500">${pct(d.w,t2)}</span></div></div>`;
+    Object.entries(byOppCls).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([c,d])=>{ const t2=d.w+d.l;
+      h+=`<div class="opp-card"><div class="opp-card-name">${c}</div><div class="opp-card-row"><span>戦績</span><span style="font-weight:500">${wl(d.w,d.l)}</span></div><div class="opp-card-row"><span>勝率</span><span style="font-weight:500">${pct(d.w,t2)}</span></div></div>`;
     });
     h+='</div></div>';
   }
-
   if(Object.keys(byCombo).length){
-    h+=`<div class="sec"><div class="analysis-sec-title">相手の持ち込み組み合わせ別</div><div class="tbl-wrap"><table>
-      <thead><tr><th style="text-align:left">持ち込み</th><th>試合</th><th>戦績</th><th>勝率</th></tr></thead><tbody>`;
-    Object.entries(byCombo).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([k,d])=>{
-      const [c1,c2]=k.split('+'); const t2=d.w+d.l;
+    h+=`<div class="sec"><div class="analysis-sec-title">相手の持ち込み組み合わせ別</div><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">持ち込み</th><th>試合</th><th>戦績</th><th>勝率</th></tr></thead><tbody>`;
+    Object.entries(byCombo).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([k,d])=>{ const [c1,c2]=k.split('+'),t2=d.w+d.l;
       h+=`<tr><td style="text-align:left"><span class="badge b-opp">${c1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${c2}</span></td><td>${t2}</td><td>${wl(d.w,d.l)}</td><td>${pct(d.w,t2)}</td></tr>`;
     });
     h+='</tbody></table></div></div>';
   }
-
   el.innerHTML=h;
 }
 
-// ---- SETTINGS ----
 function renderSettings(){ renderDeckList(); }
 function renderDeckList(){
   const el=document.getElementById('deck-list');
   if(!S.decks.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 12px">デッキがありません</div>'; return; }
-  el.innerHTML=S.decks.map(d=>`
-    <div class="deck-entry">
-      <div class="deck-entry-info">
-        <span class="badge b-opp">${d.className}</span>
-        <input class="deck-name-inp" type="text" value="${d.name}" onchange="updateDeckName(${d.id},this.value)" />
-      </div>
-      <button class="icon-btn danger" onclick="delDeck(${d.id})">✕</button>
-    </div>`).join('');
+  el.innerHTML=S.decks.map(d=>`<div class="deck-entry"><div class="deck-entry-info"><span class="badge b-opp">${d.className}</span><input class="deck-name-inp" type="text" value="${d.name}" onchange="updateDeckName(${d.id},this.value)" /></div><button class="icon-btn danger" onclick="delDeck(${d.id})">✕</button></div>`).join('');
 }
 function addDeck(){
-  const cls=document.getElementById('new-cls').value;
-  const nameInput=document.getElementById('new-dname').value.trim();
-  getOrCreateDeck(cls,nameInput);
-  document.getElementById('new-dname').value='';
-  renderDeckList();
+  getOrCreateDeck(document.getElementById('new-cls').value, document.getElementById('new-dname').value.trim());
+  document.getElementById('new-dname').value=''; renderDeckList();
 }
 function updateDeckName(id,name){ const d=S.decks.find(x=>x.id===id); if(d){d.name=name;save();} }
 function delDeck(id){ S.decks=S.decks.filter(d=>d.id!==id); save(); renderDeckList(); }
 
-// ---- SHARE ----
 function shareTweet(){
-  const s=S.sessions.find(x=>x.id===currentSId); if(!s) return;
-  const recs=s.records||[]; const wins=recs.filter(r=>(r.result||r.setResult)==='win').length;
+  const s=S.sessions.find(x=>x.id===currentSId); if(!s)return;
+  const recs=s.records||[], wins=recs.filter(r=>r.result==='win').length;
   const text=`【${s.name}】\n戦績: ${wl(wins,recs.length-wins)} (${recs.length}試合)\n#シャドウバース #ShadowverseConnect`;
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,'_blank');
 }
+
 function saveImage(){
   if(!window.html2canvas){ alert('html2canvasが読み込まれていません'); return; }
   const s=S.sessions.find(x=>x.id===currentSId);
-  html2canvas(document.getElementById('record-table'),{backgroundColor:'#ffffff',scale:2}).then(c=>{
-    const a=document.createElement('a'); a.href=c.toDataURL('image/png');
-    a.download=`${s?.name||'記録'}.png`; a.click();
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='background:#fff;padding:16px 20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;position:fixed;top:-9999px;left:-9999px';
+  const hdr=document.createElement('div');
+  hdr.style.cssText='margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e0e0e0';
+  hdr.innerHTML=`<div style="font-size:16px;font-weight:500">${s?.name||''}</div><div style="font-size:12px;color:#6b6b68;margin-top:3px">${s?.date||''} &nbsp; ${MODE_LABEL[s?.mode]||''}</div>`;
+  wrapper.appendChild(hdr);
+  wrapper.appendChild(document.getElementById('record-stats').cloneNode(true));
+  wrapper.appendChild(document.getElementById('record-table').cloneNode(true));
+  document.body.appendChild(wrapper);
+  html2canvas(wrapper,{backgroundColor:'#ffffff',scale:2}).then(c=>{
+    const a=document.createElement('a');
+    a.href=c.toDataURL('image/png'); a.download=`${s?.name||'記録'}.png`; a.click();
+    document.body.removeChild(wrapper);
   });
 }
 
-// ---- DATA ----
 function exportData(){
   const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
@@ -811,24 +610,17 @@ function exportData(){
   URL.revokeObjectURL(url);
 }
 function importData(input){
-  const file=input.files[0]; if(!file) return;
+  const file=input.files[0]; if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{
-    try{ S={...fresh(),...JSON.parse(e.target.result)}; save(); renderTBar(); renderSettings(); alert('インポートしました'); }
-    catch{ alert('読み込みに失敗しました'); }
-  };
+  reader.onload=e=>{ try{ S={...fresh(),...JSON.parse(e.target.result)}; save(); renderTBar(); renderSettings(); alert('インポートしました'); }catch{ alert('読み込みに失敗しました'); } };
   reader.readAsText(file);
 }
 
-// ---- HELPERS ----
 function getDeck(id){ return S.decks.find(d=>d.id===id)||null; }
 function wl(w,l){ return `${w}勝${l}敗`; }
 function pct(w,t){ return t>0?Math.round(w/t*100)+'%':'-'; }
 
-// ---- INIT ----
-loadState();
-renderTBar();
-renderHome();
+loadState(); renderTBar(); renderHome();
 </script>
 </body>
 </html>
