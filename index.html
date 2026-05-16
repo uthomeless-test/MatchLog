@@ -411,7 +411,7 @@ function sessionDeckOpts(s,defaultIdx){
 }
 
 function renderBO1Form(el,s){
-  el.innerHTML=`<div class="add-form">
+  el.innerHTML=`<div class="add-form" id="bo1-form">
     <div class="fg"><label>自分のデッキ</label><select id="b1-my">${sessionDeckOpts(s,0)}</select></div>
     <div class="fg"><label>相手D1</label><select id="b1-o1" onchange="updateBO1Pick()">${clsOpts('エルフ')}</select></div>
     <div class="fg"><label>相手D2</label><select id="b1-o2" onchange="updateBO1Pick()">${clsOpts('ロイヤル')}</select></div>
@@ -421,6 +421,9 @@ function renderBO1Form(el,s){
     <button class="btn btn-primary" onclick="addBO1(${s.id})">追加</button>
   </div>`;
   updateBO1Pick();
+  document.getElementById('bo1-form').addEventListener('keydown', e=>{
+    if(e.key==='Enter' && e.target.tagName!=='TEXTAREA'){ e.preventDefault(); addBO1(s.id); }
+  });
 }
 function updateBO1Pick(){
   const o1=document.getElementById('b1-o1')?.value;
@@ -458,20 +461,28 @@ function renderBO1Table(el,s){
 }
 
 function renderRankForm(el,s){
-  el.innerHTML=`<div class="add-form">
+  el.innerHTML=`<div class="add-form" id="rank-form">
     <div class="fg"><label>自分のデッキ</label><select id="rk-my">${sessionDeckOpts(s,0)}</select></div>
     <div class="fg"><label>相手のクラス</label><select id="rk-opp">${clsOpts('エルフ')}</select></div>
     <div class="fg"><label>先後</label><select id="rk-turn"><option value="first">先攻</option><option value="second">後攻</option></select></div>
+    <div class="fg"><label>自分のレート</label><input id="rk-myrate" type="text" placeholder="-" style="width:72px" /></div>
+    <div class="fg"><label>相手のレート</label><input id="rk-opprate" type="text" placeholder="-" style="width:72px" /></div>
     <div class="fg"><label>結果</label><select id="rk-res"><option value="win">勝</option><option value="lose">負</option></select></div>
     <button class="btn btn-primary" onclick="addRank(${s.id})">追加</button>
   </div>`;
+  document.getElementById('rank-form').addEventListener('keydown', e=>{
+    if(e.key==='Enter' && e.target.tagName!=='TEXTAREA'){ e.preventDefault(); addRank(s.id); }
+  });
 }
 function addRank(sid){
   const myDeckId=Number(document.getElementById('rk-my').value);
   if(!myDeckId)return alert('デッキを選択してください');
+  const myRate=document.getElementById('rk-myrate').value.trim()||'-';
+  const oppRate=document.getElementById('rk-opprate').value.trim()||'-';
   const r={id:S.nextRId++,mode:'rank',myDeckId,
     oppClass:document.getElementById('rk-opp').value,
     turn:document.getElementById('rk-turn').value,
+    myRate,oppRate,
     result:document.getElementById('rk-res').value,
     memo:'',createdAt:Date.now()};
   S.sessions.find(s=>s.id===sid).records.push(r); save(); renderRecord();
@@ -479,12 +490,14 @@ function addRank(sid){
 function renderRankTable(el,s){
   const recs=(s.records||[]).filter(r=>r.mode==='rank');
   if(!recs.length){ el.innerHTML='<div class="empty">記録がありません</div>'; return; }
-  let h=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手のクラス</th><th>先後</th><th>結果</th><th style="text-align:left">メモ</th><th></th></tr></thead><tbody>`;
+  let h=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手のクラス</th><th>先後</th><th>自レート</th><th>相手レート</th><th>結果</th><th style="text-align:left">メモ</th><th></th></tr></thead><tbody>`;
   recs.forEach((r,i)=>{ const d=getDeck(r.myDeckId);
     const turnLabel=r.turn==='first'?'先攻':r.turn==='second'?'後攻':'-';
     h+=`<tr><td style="color:var(--text3)">${i+1}</td><td><span class="badge b-deck">${d?.name||'?'}</span></td>
       <td><span class="badge b-opp" style="display:inline-flex;align-items:center;gap:4px">${clsIcon(r.oppClass,13)}${r.oppClass}</span></td>
       <td style="font-size:12px">${turnLabel}</td>
+      <td style="font-size:12px;color:var(--text2)">${r.myRate||'-'}</td>
+      <td style="font-size:12px;color:var(--text2)">${r.oppRate||'-'}</td>
       <td><span class="badge b-${r.result}">${r.result==='win'?'勝':'負'}</span></td>
       <td class="memo-cell">${r.memo||''}</td>
       <td style="white-space:nowrap"><button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})">✎</button><button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})">✕</button></td></tr>`;
@@ -511,6 +524,8 @@ function openEditRecord(sid,rid){
       <div class="mfg"><label>自分のデッキ</label><select id="er-my">${sessionDeckOpts(s)}</select></div>
       <div class="mfg"><label>相手のクラス</label><select id="er-opp">${clsOpts(r.oppClass)}</select></div>
       <div class="mfg"><label>先後</label><select id="er-turn"><option value="first"${r.turn==='first'?' selected':''}>先攻</option><option value="second"${r.turn==='second'?' selected':''}>後攻</option></select></div>
+      <div class="mfg"><label>自分のレート</label><input id="er-myrate" type="text" value="${r.myRate||'-'}" /></div>
+      <div class="mfg"><label>相手のレート</label><input id="er-opprate" type="text" value="${r.oppRate||'-'}" /></div>
       <div class="mfg"><label>結果</label><select id="er-res"><option value="win"${r.result==='win'?' selected':''}>勝</option><option value="lose"${r.result==='lose'?' selected':''}>負</option></select></div>
       <div class="mfg"><label>メモ</label><textarea id="er-memo">${r.memo||''}</textarea></div>
       <div class="modal-footer"><button class="btn" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveEditRank(${sid},${rid})">保存</button></div>`);
@@ -533,6 +548,8 @@ function saveEditRank(sid,rid){
   r.myDeckId=Number(document.getElementById('er-my').value);
   r.oppClass=document.getElementById('er-opp').value;
   r.turn=document.getElementById('er-turn').value;
+  r.myRate=document.getElementById('er-myrate').value.trim()||'-';
+  r.oppRate=document.getElementById('er-opprate').value.trim()||'-';
   r.result=document.getElementById('er-res').value;
   r.memo=document.getElementById('er-memo').value;
   save(); closeModal(); renderRecord();
@@ -772,10 +789,63 @@ function exportData(){
 }
 function importData(input){
   const file=input.files[0]; if(!file)return;
+  input.value=''; // 同じファイルを再インポートできるようにリセット
   const reader=new FileReader();
-  reader.onload=e=>{ try{ S={...fresh(),...JSON.parse(e.target.result)}; save(); currentSId=getLatestSessionId(); renderTBar(); renderHome(); alert('インポートしました'); }catch{ alert('読み込みに失敗しました'); } };
+  reader.onload=e=>{
+    try{
+      const imported=JSON.parse(e.target.result);
+      const src=imported.sessions||[];
+      // 既存セッション名セット
+      const existingNames=new Set(S.sessions.map(s=>s.name));
+      // ID衝突を避けるためオフセット計算
+      const sidOffset=S.nextSId;
+      const didOffset=S.nextDId;
+      const ridOffset=S.nextRId;
+      // デッキマップ: インポート側id → 既存/新規id
+      const deckIdMap={};
+      (imported.decks||[]).forEach(d=>{
+        const existing=S.decks.find(x=>x.className===d.className&&x.name===d.name);
+        if(existing){ deckIdMap[d.id]=existing.id; }
+        else{
+          const newId=S.nextDId++;
+          deckIdMap[d.id]=newId;
+          S.decks.push({...d,id:newId});
+        }
+      });
+      // セッションをマージ
+      src.forEach(s=>{
+        let name=s.name;
+        if(existingNames.has(name)){
+          let n=1;
+          while(existingNames.has(`${s.name}(${n})`)) n++;
+          name=`${s.name}(${n})`;
+        }
+        existingNames.add(name);
+        const newSid=S.nextSId++;
+        const newDeckIds=(s.deckIds||[]).map(id=>deckIdMap[id]||id);
+        const newRecords=(s.records||[]).map(r=>({
+          ...r,
+          id:S.nextRId++,
+          myDeckId:deckIdMap[r.myDeckId]||r.myDeckId,
+        }));
+        S.sessions.push({...s,id:newSid,name,deckIds:newDeckIds,records:newRecords});
+      });
+      save(); currentSId=getLatestSessionId(); renderTBar(); renderHome();
+      alert(`インポートしました（${src.length}件のセッションを追加）`);
+    }catch{ alert('読み込みに失敗しました'); }
+  };
   reader.readAsText(file);
 }
+
+// ── エンターキーで保存 ─────────────────────────────────────────────
+// モーダル: modal-box 内でEnter → btn-primary をクリック
+document.getElementById('modal-bg').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && e.target.tagName!=='TEXTAREA'){
+    e.preventDefault();
+    const btn=document.querySelector('#modal-box .modal-footer .btn-primary');
+    if(btn) btn.click();
+  }
+});
 
 function getDeck(id){ return S.decks.find(d=>d.id===id)||null; }
 function wl(w,l){ return `${w}勝${l}敗`; }
