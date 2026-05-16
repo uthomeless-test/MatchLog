@@ -108,6 +108,22 @@
     .analysis-sec-title { font-size: 14px; font-weight: 500; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); }
     .home-card-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 
+    /* rank analysis table */
+    .rank-an-tbl th { text-align: right; }
+    .rank-an-tbl th:first-child { text-align: left; }
+    .rank-an-tbl td { text-align: right; }
+    .rank-an-tbl td:first-child { text-align: left; font-weight: 500; }
+    .rank-an-tbl tr:hover td { background: var(--bg2); }
+
+    /* bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: 6px; }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .bar-label { width: 80px; flex-shrink: 0; text-align: right; color: var(--text2); font-size: 11px; }
+    .bar-track { flex: 1; background: var(--bg3); border-radius: 4px; height: 18px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--blue); border-radius: 4px; display: flex; align-items: center; padding-left: 6px; }
+    .bar-pct { font-size: 11px; color: var(--text2); width: 38px; flex-shrink: 0; }
+    .bar-cnt { font-size: 10px; color: var(--text3); width: 40px; flex-shrink: 0; text-align: right; }
+
     @media(max-width:600px){ .nav-tab { padding: 6px 10px; font-size: 12px; } }
   </style>
 </head>
@@ -175,19 +191,7 @@
 <div id="page-settings" class="page">
   <div class="page-header"><h1 class="page-title">設定</h1></div>
   <div class="sec">
-    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">デッキを追加</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
-      <div class="fg"><label>クラス</label>
-        <select id="new-cls" style="height:30px">
-          <option>エルフ</option><option>ロイヤル</option><option>ウィッチ</option>
-          <option>ドラゴン</option><option>ナイトメア</option><option>ビショップ</option><option>ネメシス</option>
-        </select>
-      </div>
-      <div class="fg"><label>デッキ名（省略可）</label>
-        <input id="new-dname" type="text" style="width:180px;height:30px" />
-      </div>
-      <button class="btn btn-primary" onclick="addDeck()">追加</button>
-    </div>
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">デッキ管理</div>
     <div class="card" style="padding:0;overflow:hidden"><div id="deck-list"></div></div>
   </div>
   <div class="sec">
@@ -206,13 +210,23 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
+const CLASS_ICONS = {
+  'エルフ': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNzQiIGhlaWdodD0iMjgwIiB2aWV3Qm94PSIwIDAgMzc0IDI4MCI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogIzQzOTE1OTsKICAgICAgICBmaWxsLXJ1bGU6IGV2ZW5vZGQ7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxwYXRoIGlkPSJjbGFzc19lbGYuc3ZnIiBjbGFzcz0iY2xzLTEiIGQ9Ik00MTYuODQ0LDE2MC4wNDdjLTMyLjA1MiwxOC42NjQtNDYuNTQ0LDQ5LTcxLjMzNyw3OS43QzI5OS4zLDI5Ni45NzksMjI3LjU1NCwzMTMuODQ0LDE3Ny43LDMwNC4wODdjLTI5LjQwOC01Ljc1Ni0zMy44NDEtMTAuMTUzLTQ1LjItNi40NS0xMy43MzMsNC40NzctMjMuMzQ4LDM0LjQzNC0yMS40MzcsNTkuMDczLDIuNCwzMC45OTMtLjUyMiwzOS43NTktOCwzOS4yODEtMTkuMDQ2LTEuMjE3LTIxLjQ3OS0yMS4zNC0xNy4zNzMtNDQuMjg2YTE1Mi40NDMsMTUyLjQ0MywwLDAsMSwzNi4xOTMtNzQuMDQ2YzE3LjU2My0xOS44NTQsNjAuMTk0LTU2LjYxNywxMDAuNjM1LTc5Ljc5NSwzNC40MzktMTkuNzM4LDcyLjU1NC0zNS42NSw3Ny43LTM3LjY5My0xMi41MjYtMS42NTgtNTMuNzYyLTEuMjc2LTk4LjA0MSwyMi44NjgtMzguMDE3LDIwLjcyOS02Ny4zMzQsNTUuODYxLTY4LjI3MSw1Ni4zODlzLTIuNjQ4LS41OTItMS45NTQtMi40MjFjNDcuNC0xMjQuOTM1LDE3MS45MTQtMTI1LjMxNywyMzAuMjgzLTExOC45MTNDNDE5LjA4NCwxMjUuNTg4LDQ1OCwxNTEuMTgyLDQ1OCwxNTEuMTgyUzQzNi42NDMsMTQ4LjUxOSw0MTYuODQ0LDE2MC4wNDdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODQgLTExNikiLz4KPC9zdmc+Cg==',
+  'ロイヤル': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNTgiIGhlaWdodD0iMzUwIiB2aWV3Qm94PSIwIDAgMzU4IDM1MCI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogIzc5N2IxYjsKICAgICAgICBmaWxsLXJ1bGU6IGV2ZW5vZGQ7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxwYXRoIGlkPSJjbGFzc19yb3lhbC5zdmciIGNsYXNzPSJjbHMtMSIgZD0iTTQzMi4yMzEsMTg3LjA4N2MtMi43NS00LjcyMy0yNS4yLTQyLjM5NS0yNS4yLTQyLjM5NXMyLjIsMjguNTcyLDEuOTY3LDQzLjMxOVM0MDcuMjU1LDIxNS4wNzQsMzkzLjA1NCwyNTVzLTM1LjcxNCw2MC43Ny01Ny4wNjcsNjAuNzE1UzI5Ni4yLDI4OS4yNSwyODguMTUsMjY1LjEyN3MtOS43NTktMzkuOTE2LTQuODc1LTU3LjAyYTE0MC40NTksMTQwLjQ1OSwwLDAsMSwxMi4xOS0yOS41MTZzLTEyLjc0Ni0xMy44LTI1LjU2Mi00OS43N1MyNTYuMDEzLDgwLDI1Ni4wMTMsODBzLTEuMDc0LDEyLjg0Ny0xMy44ODksNDguODItMjUuNTU5LDQ5Ljc3LTI1LjU1OSw0OS43N2ExNDAuNTUzLDE0MC41NTMsMCwwLDEsMTIuMTg3LDI5LjUxNmM0Ljg4NywxNy4xLDMuMTcsMzIuOS00Ljg3NSw1Ny4wMlMxOTcuNCwzMTUuNjYsMTc2LjA0LDMxNS43MTMsMTMzLjE3NywyOTQuOTIzLDExOC45NzYsMjU1cy0xNS43MjEtNTIuMjQxLTE1Ljk1MS02Ni45ODdTMTA1LDE0NC42OTIsMTA1LDE0NC42OTJzLTIyLjQ1LDM3LjY3Mi0yNS4yLDQyLjM5NS00LjM4OSwxNC43NDctLjM4MSwxOS41ODdjMCwwLTEuNTkyLDMzLjc1Ni4xMzQsOTQuMjRzMjQuMzcxLDEwNi40MjgsMjQuMzcxLDEwNi40MjhhMTMuMDkzLDEzLjA5MywwLDAsMCwxLjE3OSw5LjIzOWMyLjYyMiw1LjI1NCw1LjY2MSw1LjEyLDUuNjYxLDUuMTJzMC4wNTIsMy43NDEtLjM2MSw4LjNjMCwwLDQ4LjEtMTEuOCw5Mi4wNjItMTIuMjY3YTI4LjY0MywyOC42NDMsMCwwLDEsMjAuOTU3LTYuNjgxYzEyLjAxMiwwLjg0MiwxNy43NjksOC4zNjgsMTcuNzY5LDguMzY4SDI3MC44NHM1Ljc2MS03LjUyNiwxNy43NzMtOC4zNjhhMjguNjM5LDI4LjYzOSwwLDAsMSwyMC45NTQsNi42ODFDMzUzLjUzLDQxOC4yLDQwMS42MjksNDMwLDQwMS42MjksNDMwYy0wLjQxNC00LjU1Ny0uMzYxLTguMy0wLjM2MS04LjNzMy4wMzgsMC4xMzQsNS42NjEtNS4xMmExMy4xLDEzLjEsMCwwLDAsMS4xNzktOS4yMzlzMjIuNjQ1LTQ1Ljk0NSwyNC4zNzEtMTA2LjQyOCwwLjEzNC05NC4yNC4xMzQtOTQuMjRDNDM2LjYyNCwyMDEuODM0LDQzNC45ODIsMTkxLjgxMSw0MzIuMjMxLDE4Ny4wODdaTTE3NS43NTQsMzc2LjcwNmMtMS45ODIsNS41NDItMi44MiwyMi4wMTctMi44MiwyMi4wMTdzLTguODA4LTEzLjk0LTEzLjI1Mi0xNy44LTEzLjQ3Ny04LjQ5MS0xMy40NzctOC40OTEsNS42LTguNDc2LDcuNTgtMTQuMDE4LDIuODIzLTIyLjAxNywyLjgyMy0yMi4wMTcsOC44MDUsMTMuOTQsMTMuMjQ5LDE3LjgsMTMuNDgsOC40OSwxMy40OCw4LjQ5UzE3Ny43MzcsMzcxLjE2MSwxNzUuNzU0LDM3Ni43MDZabTkwLjkxMy0xMi4zMjJjLTQuMjU3LDYuMjMtMTAuNjUxLDI2LjM4NC0xMC42NTEsMjYuMzg0cy02LjM5My0yMC4xNTQtMTAuNjUtMjYuMzg0LTEzLjk1OS0xNC45MjEtMTMuOTU5LTE0LjkyMSw5LjctOC42OTEsMTMuOTU5LTE0LjkxNywxMC42NS0yNi4zODgsMTAuNjUtMjYuMzg4LDYuMzk0LDIwLjE1NCwxMC42NTEsMjYuMzg4LDEzLjk1OSwxNC45MTcsMTMuOTU5LDE0LjkxN1MyNzAuOTI1LDM1OC4xNTQsMjY2LjY2NywzNjQuMzg0Wm04NS42NzgsMTYuNTM5Yy00LjQ0MiwzLjg2LTEzLjI0OSwxNy44LTEzLjI0OSwxNy44cy0wLjg0MS0xNi40NzUtMi44MjEtMjIuMDE3LTcuNTgyLTE0LjAyMS03LjU4Mi0xNC4wMjEsOS4wMzgtNC42MzgsMTMuNDc5LTguNDksMTMuMjUzLTE3LjgsMTMuMjUzLTE3LjgsMC44MzgsMTYuNDY5LDIuODE3LDIyLjAxNyw3LjU4MiwxNC4wMTgsNy41ODIsMTQuMDE4UzM1Ni43OSwzNzcuMDY4LDM1Mi4zNDUsMzgwLjkyM1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC03NyAtODApIi8+Cjwvc3ZnPgo=',
+  'ウィッチ': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MTIiIGhlaWdodD0iNDEyIiB2aWV3Qm94PSIwIDAgNDEyIDQxMiI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogIzUzNWZhMzsKICAgICAgICBmaWxsLXJ1bGU6IGV2ZW5vZGQ7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxwYXRoIGlkPSJjbGFzc193aXRjaC5zdmciIGNsYXNzPSJjbHMtMSIgZD0iTTQ1OC43NzMsMjUxLjEzYy0xNy40NDgtMTcuNDUyLTM0Ljg1Ni0zNC45NDMtNTIuNC01Mi4zYTkuODM2LDkuODM2LDAsMCwxLTMuMjgtNy43NjVjMC4xNC0yNS4zNzUuMDc2LTUwLjc1NCwwLjA3Ni03Ni4xMzIsMC00Ljk3OS0uNzEyLTUuNy01LjczMy01LjdxLTM4LjY2NCwwLTc3LjMyNS4wNDNhNy4wMTcsNy4wMTcsMCwwLDEtNS40OTMtMi4yNTdxLTI2Ljk0NS0yNy4xLTU0LjAxMi01NC4wNzZjLTMuOTI4LTMuOTI1LTUuODY4LTMuOTM0LTkuNzYzLS4wNDNxLTI3LjAyMSwyNy4wMTgtNTQuMDE1LDU0LjA3NGE3LjAyMSw3LjAyMSwwLDAsMS01LjQ3MiwyLjMwOHEtMzguNjU4LS4xMTktNzcuMzI0LTAuMDQ2Yy00LjM2MywwLTUuMjIyLjg5Mi01LjIyMiw1LjI4LDAsMjUuNjc3LS4wMzcsNTEuMzU3LjA1NSw3Ny4wMzRhNy4yODUsNy4yODUsMCwwLDEtMi4zMzYsNS43MzdxLTI2Ljc4OCwyNi42MjItNTMuNDM2LDUzLjM3OWMtNC4wODcsNC4wODctNC4xLDUuOTU3LS4wODUsOS45NzZxMjYuODA3LDI2LjgxNyw1My42NSw1My41OTJhNi42NDIsNi42NDIsMCwwLDEsMi4yLDUuMTkyYy0wLjA4LDI1Ljk3OS0uMDUyLDUxLjk1NC0wLjA0OSw3Ny45MzMsMCw0LjU2NC44MSw1LjM4LDUuNDIsNS4zODNxMTkuNDgsMC4wMTMsMzguOTYxLDBjMTIuODg5LDAsMjUuNzc1LjA0OSwzOC42NjItLjA0MmE2Ljk4LDYuOTgsMCwwLDEsNS41LDIuMjMycTI2LjkzOSwyNy4xMDksNTQuMDA5LDU0LjA3OWMzLjk0LDMuOTQxLDUuODc3LDMuOTU2LDkuNzU5LjA3NnEyNi45MTgtMjYuOTEzLDUzLjgtNTMuODY2YTcuNjY0LDcuNjY0LDAsMCwxLDUuOTg0LTIuNTRjMjUuNjc1LDAuMSw1MS4zNS4wNjcsNzcuMDI2LDAuMDU4LDQuMzQ4LDAsNS4yMzctLjkxNiw1LjIzNy01LjI4NnEwLjAwOS0zOC42NjctLjAzOS03Ny4zMzJhNi42NDcsNi42NDcsMCwwLDEsMi4xMDctNS4yMzJxMjYuNzkzLTI2LjYxNiw1My40NDUtNTMuMzdDNDYzLjA2LDI1Ny4xNDcsNDYzLjA3OCwyNTUuNDM2LDQ1OC43NzMsMjUxLjEzWk0yNTUuNjE0LDgyLjgxN2MxNS45NDcsMTUuOTUxLDMyLjA2NywzMi4wNzUsNDcuOTI4LDQ3Ljk0My0zMS42OC0xMS43NTctNjMuOTA4LTExLjc4MS05NS45NzguMTE5Wk0zMzguNiwyMjEuNzc4bDQuMzQ4LTQ4LjM5MWExMTkuNSwxMTkuNSwwLDAsMSwzMi45NzUsNzkuNTY3Wm0zNy4zMjMsMzcuMjZhMTE5LjUyOCwxMTkuNTI4LDAsMCwxLTMyLjk3NSw3OS41NDlMMzM4LjYsMjkwLjIxMlptLTg1LjcxMS04NS42NTEtMzEuMTktMzcuMzRhMTE5LjQ4OSwxMTkuNDg5LDAsMCwxLDc5LjU4MSwzMi45OTFaTTEzNi4wNTUsMjUyLjk2OWExMTkuNTEyLDExOS41MTIsMCwwLDEsMzIuOTkzLTc5LjZsNC4zNDgsNDguNDA3Wk0xNzMuNCwyOTAuMjE1bC00LjM0OCw0OC4zOTFhMTE5LjUzMiwxMTkuNTMyLDAsMCwxLTMyLjk5LTc5LjU4Wm0tMC4wMTgtMTIxLjE3N2ExMTkuNDg5LDExOS40ODksMCwwLDEsNzkuNi0zMi45OTRsLTMxLjE5LDM3LjM0M1ptOC4wMDUsODYuNjJhNzQuNjE0LDc0LjYxNCwwLDAsMSwxNDkuMjI2LjUzYy0wLjA0LDQxLjA3LTMzLjY2Miw3NC40OTEtNzQuODc2LDc0LjQyN0MyMTQuNjgsMzMwLjU1MSwxODEuMzA3LDI5Ni45LDE4MS4zODMsMjU1LjY1OFptNzEuNTcsMTIwLjI3QTExOS41LDExOS41LDAsMCwxLDE3My40LDM0Mi45NTRsNDguMzg1LTQuMzQ4Wm0zNy4yNjEtMzcuMzIyLDQ4LjM3LDQuMzQ4YTExOS41LDExOS41LDAsMCwxLTc5LjU0MSwzMi45NzRaTTEzMC4xOTEsMzA0LjUxNUMxMTQuMzM2LDI4OC4yNDUsOTguNDc3LDI3MS45NzQsODIuOTA4LDI1NmMxNS45MzgtMTUuOTM4LDMyLjA2Ny0zMi4wNjUsNDcuNy00Ny43LTExLjU5NSwzMS4zMDctMTEuNTgsNjMuNDQ2LjI4OSw5NS41ODVDMTMwLjY2MywzMDQuMSwxMzAuNDI1LDMwNC4zMDUsMTMwLjE5MSwzMDQuNTE1Wm0yLjcyOC0xNzEuMTQ4aDY3LjUyYTE0Ny45LDE0Ny45LDAsMCwwLTM5LjY0NiwyOC4xOTIsMTQ1LjkyOSwxNDUuOTI5LDAsMCwwLTI3Ljg3NCw0MC4wMjZWMTMzLjM2N1ptMC4xLDI0NS4yNTVWMzA5LjE1NmMxNC42MjIsMzEuNzUyLDM3LjQzMiw1NC42NzYsNjguNzI1LDY5LjQ2NkgxMzMuMDJaTTI1Ni4yLDQyOS4zcS0yNC4yMzUtMjQuMjQ2LTQ4LjgyMS00OC44MzVjMzIuODYyLDEyLjE2Miw2NS43MTcsMTEuOTQ2LDk4LjMxMS0uNjY0UTI4MC45MzIsNDA0LjU2OCwyNTYuMiw0MjkuM1ptMTIyLjc2NS01MC43NzhIMzA4Ljc1MmMzMi42LTE0LjkwOSw1NS42MjYtMzguMTg3LDcwLjIxNS03MC44djcwLjhabTAuMDQyLTE3NC43NzVjLTE0LjM0OC0zMi4xMTctMzYuOTI5LTU1LjI3LTY4LjA2OC03MC4zOTJoNjguMDY4djcwLjM5MlptMC43MTksMTAyLjE0N3ExOC45NTEtNDkuMjA3LjcwOS05OC41MzIsMjQuNTM3LDI0LjUzNyw0OC45MjEsNDguOTJRNDA0LjY3MSwyODAuOTY4LDM3OS43MjgsMzA1Ljg5NFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC01MCAtNTApIi8+Cjwvc3ZnPgo=',
+  'ドラゴン': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNTYiIGhlaWdodD0iMzk2IiB2aWV3Qm94PSIwIDAgMzU2IDM5NiI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogI2EwNWExMjsKICAgICAgICBmaWxsLXJ1bGU6IGV2ZW5vZGQ7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxwYXRoIGlkPSJjbGFzc19kcmFnb24uc3ZnIiBjbGFzcz0iY2xzLTEiIGQ9Ik0xMzMuMjg4LDM2NS45MjVjNi4zMTYtLjA3NSwxMC43NjItNC4yNjksNy45NDUtOS45Ni01LjA1OC0xMC4yMTctMjQuMi0xNy4xMjYtNDIuODE5LTEwLjUyMiwxNS0yMS45MzgsMjYuMTItMzIuNDI0LDY3Ljg1My00MS4xM2E5LjI1OCw5LjI1OCwwLDAsMCw2LTEyLjYwOWMtMi44NDUtNi4zMjEtMTUuMDEyLTE3LjExMy00Mi45MzQtMjYuNjg4LDE0LjExMS03Ljc4MSwyOS44LTEwLjc0Miw1MC4xMzktMTEuNDQxLTEuOTExLTUuNjM1LTcuNy04LjA5NC0xMS40MDgtMTkuMjE0LTMuMy05LjkwNy0yMS45MTgtMjQuMzE4LTM3LjgzLTI1LjUxOSwxNC4xMTEtNy4yMDUsMzQuNDgyLTYuODg1LDUwLjEzOSwyLjcsMi40LTE5LjIxNC00NS42MDctMzEuOTI1LTc2LjU2LTI5LjQyMiw1Mi4yNDEtMzMuOTI1LDkwLjk3Mi0zLjYsMTEzLjE4OS03LjIwNS0xLjA3Ni03LjIxLTI1LjUyLTIxLjYxNi0xOS40MzItNjAuMjQsMjIuNTQyLDM1Ljk3Nyw0MS42NTIsNDAuNDY0LDY0LjYwNSw0Ni45MzFhMjQuNTY5LDI0LjU2OSwwLDAsMCwxMi4xLDExLjE0NWM3LjEsMS40Myw5LjcwNy0uNDY3LDkuODU4LTcuNzUsMC4xMi01Ljc0Mi0uMTQ1LTkuNzEtNS45MTctMTEuNTMxLTU1LjAyOS0yMi40NjctMTguMi02My4yMzUtOTMuNDYzLTk0LjI4Miw4MC42NjctNC4wMjIsNzQuMjkzLDU4LjY3OCwxMjQuNSw2OS45NDksNDAuMjYsOS4wMzcsMTUuOTMxLDQzLjcxMywzMi4wNDUsNTUuMjE1aDBjMjYuMTcxLDE0LjczNyw0My43OTMsMzAuODIyLDM5LjE2LDU4LjU5LTAuNSwzLjAwNi0uOTQyLDYuMDY3LDEuNjc0LDcuNjI5LDkuNTUzLDUuNzA2LDEzLjQyOCwxMC41NywyMC4zMzcsMTguMzI2LDEuOTEzLDIuMTQ2LDUuMTQ4LDMuODU4LDEyLjMyLDEuODA5LDMuMDc0LDEwLjI0NiwxMi4zLDI0LjU5LDE3LjU2MywyNy4zLDYsOS41ODUtNC44OTIsNDAuMi0yNC43MzUsNDQuNDIsMy40NDktMjMuNjkxLTYuMTQ4LTIzLjU2NS0xMS43NDctMjAuMzgzLTUtOS41ODQtMjQuMTE1LTE5LjU3NS0yNy4xODktMTkuNTc1LTQuMjgzLjI2Ni04LjUyLDEwLjE5Mi0xMS4yNzEsMTguNDQyLTEuMDI0LDEuMDI1LTMuMzc4LTEuOTY3LTUuMTIzLDEwLjI0Ni0xLjAyNCw3LjE3Miw4LjE4MywxNC41ODMsMTkuNDY4LDE5LjQ2Ny0zOS44ODMsNS4xMTMtMzMuMzgtMTkuMjUzLTM5LjA2Ni0zOC4wNDVhMi4yNDksMi4yNDksMCwwLDAtMS43MTktMS41MjNjLTE0LjkzOC0zLjA5Mi0zNS44MzUtOC45NjQtNTIuNjEyLTIxLjQsNi4zLTMuODMsMTMuMDM2LTcuOSwxNy45NzItMTMuMjY5LTEwLjY0My0yLjg1NS0xOS45NTktNC4wNTktMjYuNzg3LTcuNSwyLjU5NC0yLjIyNiw1LjQzOS01LjksOC43MDctMTEuNjUyLTE1LjE1OCw3Ljg5LTIxLjMzMiwxMi4xNTgtMjcuMDIxLDE0Ljk1NCw0LjA2LDUuMjM2LDEwLjE3Nyw5LjkwNywxNi41MTMsMTMuMjEtNiw1LjctOS40MTIsMTEuMDM3LTEzLjUxMSwxNC4xMSw3Ljk0NCwxMi4zMSwyMC4zMDUsMjUuOTcxLDM1LjQ0MSwzMy42Mi0zLjgyOSw1LjUwNi04Ljk5NCw5Ljk0LTkuNDgzLDEwLjc1OCwxNy42LDcuNTg3LDMxLjI5MywxMy44LDQ5LjQsMjguNy02Ljk1OCwyLjY4My0xMC4yNTgsNS42OTItMTMuMjkzLDkuMzMzLDE3LjY3NSw5LjgxLDMxLjEzNCwxNS4zODUsNDksMzMuMTY4QzI5Ny40Nyw0MTYuMywyNzQuNDA3LDQ1My4wNDQsMjM1Ljk1LDQ1NC43NiwxMjkuMDM4LDQ1OS41MjgsMTY2LjI2NywzOTQuOTgsNzgsMzg4LjM3NSw5MS4yMiwzNzMuOSwxMTMuNzI2LDM2Ni4xNTksMTMzLjI4OCwzNjUuOTI1WiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTc4IC01OSkiLz4KPC9zdmc+Cg==',
+  'ナイトメア': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNjAiIGhlaWdodD0iNDE2IiB2aWV3Qm94PSIwIDAgMzYwIDQxNiI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogIzhkMWU0MTsKICAgICAgICBmaWxsLXJ1bGU6IGV2ZW5vZGQ7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxwYXRoIGlkPSJjbGFzc19uaWdodG1hcmUuc3ZnIiBjbGFzcz0iY2xzLTEiIGQ9Ik00MzQuOTI1LDE1OS44OWMtMy40MDUsOS45NjctMTQuMDY1LDE1Ljg1Ny0yNS4xODEsMTQuMDQ1LTE3LjUxMy0yLjg1NC0yOC41LTUuMjU1LTQ2LjA4NC01LjcsMS42MTcsMTguNjE0LTYuMzY0LDE2LjA0OSw0Ljg3NywyOC40MTUsMC43MzYsMC44MDcuOTk0LDIuODc4LDAuMDM5LDQuNzYzLTUuMzkxLDEwLjY2LTExLjA0LDI3LjM0Ni0yMS4xMzcsMjkuNTA4LTUuNzQ3LDEuMjI5LTE1LjA2Ni0xLTE3LjU1MywyLjgyLTIuMjU5LDMuNDc0LTQuMDUsMTcuMzc5LTEwLjcsMjcuNjEtMyw0LjYyNC0xMi45Miw0LjU2NC0yMi4xLDQuNTY0UzI3OCwyNjUuOTczLDI3NSwyNjEuMzQ5Yy02LjY0OS0xMC4yMzEtOC40NDMtMjQuMTM2LTEwLjctMjcuNjEtMi40ODctMy44MTktMTEuODA2LTEuNTkxLTE3LjU1My0yLjgyLTEwLjEtMi4xNjItMTUuNzQ5LTE4Ljg0OC0yMS4xMzctMjkuNTA4LTAuOTU1LTEuODg1LS43LTMuOTU2LjA0LTQuNzYzLDExLjI0LTEyLjM2NiwzLjI1OS05LjgsNC44NzYtMjguNDE1LTE3LjU4Ni40NDctMjguNTcxLDIuODQ4LTQ2LjA4NCw1LjctMTEuMTE2LDEuODEyLTIxLjc3OS00LjA3OC0yNS4xODEtMTQuMDQ1LTMuNTU4LTEwLjQyMywyLjUxNC00MS4yNzIsNi4zNTEtNTEuMiwyNC45NTctMTIuNjg1LDQ2LjI4Mi0yNy40MSw1My41NC0zNi4yNDUsNi4yMTUtNy41NjMsMTAuNjYzLTE3LjQ0Mi40NTMtMjUuNDQ4LDEyLjAyNSwxLjg4OCwxOS4wNTgsMTUuNzA5LDE1LjY1NiwzMC40MzEtNS42NzQsNC4zMDUtMTguMDMxLDE1LjM1Ni0yNS4wMzMsMjQuNjkzLTExLjcyMSwxNS42MzMtOS45MTUsMTkuMjc5LTYuNzI4LDI0LjE2NCw1LjIxNyw4LjAwNiwxNy4wMTQsNS43MzgsMjYuMDU2LDMuNjc2LDUuOTUxLTQyLjMxNiw0OS45NDgtNTQuMDIsNjcuNTM2LTU0LjAyczYxLjU4NywxMS43LDY3LjUzOCw1NC4wMmM5LjA0MiwyLjA2MiwyMC44MzksNC4zMywyNi4wNTctMy42NzYsMy4xODMtNC44ODUsNC45ODktOC41MzEtNi43MzItMjQuMTY0LTctOS4zMzYtMTkuMzU5LTIwLjM4Ny0yNS4wMjktMjQuNjkzLTMuNC0xNC43MjIsMy42My0yOC41NDIsMTUuNjUyLTMwLjQzMS0xMC4yMDcsOC4wMDYtNS43NTksMTcuODg1LjQ1NiwyNS40NDgsNy4yNTgsOC44MzUsMjguNTg0LDIzLjU2LDUzLjU0LDM2LjI0NUM0MzIuNDExLDExOC42MTgsNDM4LjQ4MywxNDkuNDY3LDQzNC45MjUsMTU5Ljg5Wm0tMTg0LjE0MSwyMC43Yy00LjAzNSwxLjQ2Ny0xMywxOC4wNTctMy40MjUsMjQuODMxLDEwLjg5MSw3LjcsMjUuNDU0LDYuNDcsMzYuMzg1LTUuODA1QzI3My4wNjksMTkwLjAyLDI2MS4xMTksMTgxLjkwNiwyNTAuNzg0LDE4MC41OTFabTU3LjMzOSw0OC41NDZjLTAuOTM0LTQuNDM2LTMuOTM4LTguNTE2LTYuOTA4LTEyLjE0NS0xLjQ2My0xLjc4NS0zLjYyNS02Ljc4Mi00LjEyMy02Ljc4MnMtMi42NTgsNS00LjEyLDYuNzgyQzI5MCwyMjAuNjIxLDI4NywyMjQuNywyODYuMDY0LDIyOS4xMzdjLTEuMTU5LDUuNTEtLjQ0NywxNS44LTAuMTU4LDE3LjMxNywwLjQ4NiwyLjUzMyw2LjA0MSwzLjIzMSw3LjA1NCwxLjMyNCwwLjgwNS0xLjUxNSwyLjY5LTUuNDU2LDQuMTMyLTUuNDU2czMuMzI2LDMuOTQxLDQuMTMyLDUuNDU2YzEuMDE1LDEuOTA3LDYuNTcsMS4yMDksNy4wNTQtMS4zMjRDMzA4LjU2NywyNDQuOTM5LDMwOS4yODEsMjM0LjY0NywzMDguMTIzLDIyOS4xMzdaTTM0My4zLDE4MC41OTFjLTEwLjMzNCwxLjMxNS0yMi4xODcsOS40MjktMzIuODU5LDE5LjAyNiwxMC45MzEsMTIuMjc1LDI1LjUsMTMuNTA3LDM2LjM4Niw1LjgwNUMzNTYuNDA1LDE5OC42NDgsMzQ3LjMzNiwxODIuMDU4LDM0My4zLDE4MC41OTFaTTEyMS45MDksMjM1LjNjMTUuOTEtMTAuNDE2LDQ2LjM5MS0xNS44MTYsNjYuNzMtNS43NjMsMzQsMTYuODA2LDQwLjk3Nyw1MSw5NS4xMDUsNjEuMDYyLDYwLjg3OCwxMS4zMTcsMTEzLjctNDMuMDEyLDk4LjM3MS05OS4zNzIsNDkuMTcyLDI4LjMzNSw1NS45MzcsMTI2LjU0NSw4LjMzNywxOTMuMzY3LTQyLjc4OCw2MC4wNjgtMTI3LjI1Myw5Ny41NzEtMjI0LjksNjguMjI0LDQxLjU3MS03LDY1LjY3NS0yNS40NTgsNzcuNzIxLTU0LjU1OS0zNS4wODIsMTIuNTU0LTc4LjMzNyw4LjMyNS05Ny42LTYuMTcsNDYuMTgzLTkuNjU5LDY1LjQ4OS00MC42MTQsNTQuNDQ3LTY3LjM2MkMxODcuODM2LDI5NC45OCwxMjIuNzU0LDI4OC41NjIsNzYsMzI1Ljk0YzguMTY3LTM5Ljg3LDQ3LjE4Ny02OC4yNjIsOTUuODg3LTY1Ljg0NkMxNjUuMzY2LDI0MS44ODEsMTQzLjE1MywyMzIuMzA2LDEyMS45MDksMjM1LjNaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzYgLTQ3KSIvPgo8L3N2Zz4K',
+  'ビショップ': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNjYiIGhlaWdodD0iMzg4IiB2aWV3Qm94PSIwIDAgMzY2IDM4OCI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogI2IwYTk4ZDsKICAgICAgICBmaWxsLXJ1bGU6IGV2ZW5vZGQ7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxwYXRoIGlkPSJjbGFzc19iaXNob3Auc3ZnIiBjbGFzcz0iY2xzLTEiIGQ9Ik0yMTEuOTY1LDczLjMxN2MtNi44LDIwLjItMzQuMDI2LDQ3LjMyOS01NC4zODEsNTEuOS0xMTIuODI2LDI1LjM0NS04MC43MDUsMTM5Ljc3NC03OS4yNzksMTMzLjYsMTAuODY5LTQ3LjA4OCw1My4wNzEtNzEuNCw1Ni41MjEtNjMuMDI1LDIuNTM2LDYuMTU4LTc0LjM2MSw0OS41ODktMTQuMTMsMTU1LjAyOC0xMS4yMzItNjkuOTA4LDI2LjM2NC0xMTIuMDkyLDMxLjg4My0xMDEuMDU4LDEuMTQ3LDIuMjkzLTkuMiwxOS41NzgtMTQuMzE3LDQ4LjE5MS03LjgwOSw0My43LTQuODExLDEwOS40MzcsNTguOTQ0LDE1NC4wNDktMTcuMTc1LTI4LjAyLTE1LjMtNzQuMi0xMy44My0xMDQuOCwyLjUzNi01Mi44ODQsMjYuNDQ4LTYwLjEyOCwxNS41NzktNzcuMTUyLTE0LjY2Mi0yMi45NjQtMjMuOTE1LTYyLjgzLTUuMDc1LTkzLjUtMi40MTYsMTUuMjEzLTMuMTQsNDAuMzI2LDguMjE0LDU2LjUsMTAuMTU4LDE0LjQ4MSwyMC4yOTMsMjAuMDQ0LDM0LjMxNiwyMS4zNi0xMC43MzMtNS4yMDYtMTkuMjE1LTIzLjQ3OS0xOC45NS00My41NjksMC45MTEtNjguODExLDI2Ljk4NC03MC43MSwyNC4wMjEtMTAzLjFDMjQwLjU0OSw5Ny41NzYsMjIyLjM4NCw0Mi4zNzgsMjExLjk2NSw3My4zMTdabTg4LjA4NywwYzYuOCwyMC4yLDM0LjAyNyw0Ny4zMjksNTQuMzgyLDUxLjksMTEyLjgyNiwyNS4zNDUsODAuNywxMzkuNzc0LDc5LjI3OSwxMzMuNi0xMC44Ny00Ny4wODgtNTMuMDcyLTcxLjQtNTYuNTIxLTYzLjAyNS0yLjUzNiw2LjE1OCw3NC4zNjEsNDkuNTg5LDE0LjEzLDE1NS4wMjgsMTEuMjMyLTY5LjkwOC0yNi4zNjUtMTEyLjA5Mi0zMS44ODMtMTAxLjA1OC0xLjE0NywyLjI5Myw5LjIsMTkuNTc4LDE0LjMxNyw0OC4xOTEsNy44MDgsNDMuNyw0LjgxMSwxMDkuNDM3LTU4Ljk0NSwxNTQuMDQ5LDE3LjE3Ni0yOC4wMiwxNS4zLTc0LjIsMTMuODMxLTEwNC44LTIuNTM2LTUyLjg4NC0yNi40NDktNjAuMTI4LTE1LjU3OS03Ny4xNTIsMTQuNjYyLTIyLjk2NCwyMy45MTUtNjIuODMsNS4wNzUtOTMuNSwyLjQxNiwxNS4yMTMsMy4xNCw0MC4zMjYtOC4yMTQsNTYuNS0xMC4xNTksMTQuNDgxLTIwLjI5NCwyMC4wNDQtMzQuMzE3LDIxLjM2LDEwLjczNC01LjIwNiwxOS4yMTYtMjMuNDc5LDE4Ljk1LTQzLjU2OS0wLjkxLTY4LjgxMS0yNi45ODMtNzAuNzEtMjQuMDItMTAzLjFDMjcxLjQ2OSw5Ny41NzYsMjg5LjYzNCw0Mi4zNzgsMzAwLjA1Miw3My4zMTdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzMgLTY0KSIvPgo8L3N2Zz4K',
+  'ネメシス': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzOTAiIGhlaWdodD0iNDQ0IiB2aWV3Qm94PSIwIDAgMzkwIDQ0NCI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgZmlsbDogIzViY2NlMzsKICAgICAgICBmaWxsLXJ1bGU6IGV2ZW5vZGQ7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxwYXRoIGlkPSJjbGFzc19uZW1lc2lzLnN2ZyIgY2xhc3M9ImNscy0xIiBkPSJNMzc5LjgzOCwxNjcuN2MtMjkuMDI4LS41LTQ2LjY2LDE3LjcyNy00Ni42NiwxNy43MjdMMzEwLjYsMTQ5LjE0NXM0OC4yNDktMzMuMjg3LDk0LjU3MS0zLjM3OUM0NTAuMywxNzQuOTExLDQ1MSwyMjMuMjYyLDQ1MSwyMjMuMjYyLDQ0NS4zLDE5NC4xNjYsNDE3LjMxNCwxNjguMzQ5LDM3OS44MzgsMTY3LjdabS02MC4xOCw0NS4wMTVzLTI0LjExLTIyLjkyNi01Ni4zMS0yNi4wOGMyLjg1Niw0LjkxLDkuODM3LDE0Ljc3NywyNi43LDMyLjA4MSwyNi42LDI3LjI5Myw0My4wOTQsMzUuODgsNDMuMDk0LDM1Ljg4cy0xNi41LDguNTg4LTQzLjEsMzUuODhjLTE3LjkxNSwxOC4zODMtMjQuNjc4LDI4LjM3My0yNy4xODksMzIuOTQxLDMyLjM3Ny0zLjAzNSw1Ni44LTI2LjExNSw1Ni44LTI2LjExNS0yNS40MjYsNjMuNTkyLTQ4LjY4OSw5MS41NzItNTcuMDgxLDEwMC4zMSwyMi45NTItMi4yOTIsMzUuODkzLTE1Ljc0MSwzNS44OTMtMTUuNzQxLTQuNjY0LDguNTUzLTguODE2LDE2LjQ0Mi0xMi41MjYsMjMuNzE5LDIwLjU1Mi0uNjQsNTguODg0LTYuNzE5LDg2LjQ2Ni0zMC4zODIsMzQuMjg3LTI5LjQxLDQ0LjUyNy04Mi4yMTksMjIuOTUxLTExOC4zLTIxLjgzNC0zNi41MDktNTkuOTI1LTQ2LjYtNTkuOTI1LTQ2LjZzNTMuNDY3LDMuNDc0LDg0LjQ2NSwzMy4zODdjMzAuMDA4LDI4Ljk1Nyw0NC40LDkxLjQ1OS0zLjQ3NiwxMzUuMzM4LTQwLjQ1OCwzNy4wODEtMTA1LjM1MiwzMi4wMzMtMTMxLjMsMjguMTY5LTIwLjE3NiwzOS43ODgtMjYuNjU5LDYwLjUyNC0yOC40MzgsNjcuMTQ0LTAuMzUsMS4zNzMtLjY4NCwyLjY2OS0wLjY4NCwyLjY2OXMtMC4zMzUtMS4zLS42ODUtMi42NjljLTIuMTI0LTcuOS0xMC45NC0zNS45MTMtNDEuNzgyLTkyLjQ3MywwLDAsMTIuODY0LDEzLjUyMSwzNS45MSwxNS43NTgtOC4zNzgtOC43MTgtMzEuNjU3LTM2LjY5My01Ny4xLTEwMC4zMjcsMCwwLDI0LjM1NywyMy4xNzIsNTYuODA4LDI2LjEzNi0yLjUtNC41NTktOS4yNTgtMTQuNTUyLTI3LjItMzIuOTYyLTI2LjYtMjcuMjkyLTQzLjA5My0zNS44OC00My4wOTMtMzUuODhzMTYuNS04LjU4Nyw0My4xLTM1Ljg4YzE2Ljg0LTE3LjI3OSwyMy44MjctMjcuMTQzLDI2LjY5MS0zMi4wNi0zMi4xMjgsMy4yMjQtNTYuMywyNi4wNTktNTYuMywyNi4wNTksMjUuNDI1LTYzLjU5Miw0OC42ODktOTEuNTcyLDU3LjA4MS0xMDAuMzEtMjIuOTUzLDIuMjkyLTM1Ljg5NCwxNS43NDEtMzUuODk0LDE1Ljc0MSw0Ljg0Mi04Ljg3OSw5LjEzOS0xNy4wNTIsMTIuOTU1LTI0LjU1Ny0yMC40NDIuNTY2LTU5LjExNiw2LjU2My04Ni44OTUsMzAuMzkzLTM0LjI4MywyOS40MTItNDQuNTI2LDgyLjIyMS0yMi45NDgsMTE4LjMsMjEuODM1LDM2LjUwNiw1OS45MjUsNDYuNiw1OS45MjUsNDYuNnMtNTMuNDY3LTMuNDc0LTg0LjQ2Ny0zMy4zODdjLTMwLTI4Ljk1Ny00NC40LTkxLjQ1NiwzLjQ3NS0xMzUuMzM0LDQwLjY2NC0zNy4yNjgsMTA2LjAwNS0zMS45ODIsMTMxLjY4Ny0yOC4xMTIsMTkuODY4LTM5LjI4MywyNi4yODItNTkuOCwyOC4wNS02Ni4zNzdDMjU1LjY2OSwzNC4zLDI1NiwzMywyNTYsMzNzMC4zMzQsMS4zLjY4NCwyLjY2OWMyLjEyNSw3LjksMTAuOTQsMzUuOTE0LDQxLjc4Miw5Mi40NzMsMCwwLTEyLjg2NC0xMy41MjEtMzUuOTEtMTUuNzU4QzI3MC45MzksMTIxLjEsMjk0LjIxOCwxNDkuMDc3LDMxOS42NTgsMjEyLjcxMVptLTYzLjY1MywyLjIzNXMtMiw2LjY3NC0xNy4xNDIsMjAuNjYyLTIxLjIxNywxOC45ODQtMjEuMjE3LDE4Ljk4NCw2LjA3Niw0Ljk5MywyMS4yMTcsMTguOTg0UzI1NiwyOTQuMjM4LDI1NiwyOTQuMjM4czItNi42NzMsMTcuMTQyLTIwLjY2MiwyMS4yMTctMTguOTg0LDIxLjIxNy0xOC45ODQtNi4wNzYtNC45OTItMjEuMjE3LTE4Ljk4NFMyNTYuMDA1LDIxNC45NDYsMjU2LjAwNSwyMTQuOTQ2Wk0xMzIuMTY5LDM0MS40ODVjMjkuMDMxLDAuNSw0Ni42NjMtMTcuNzI0LDQ2LjY2My0xNy43MjRsMjIuNTgzLDM2LjI3OHMtNDguMjQ4LDMzLjI4Ny05NC41NzMsMy4zNzdjLTQ1LjEzNi0yOS4xNDItNDUuODMzLTc3LjUtNDUuODMzLTc3LjVDNjYuNzA2LDMxNS4wMTYsOTQuNjkzLDM0MC44MzYsMTMyLjE2OSwzNDEuNDg1WiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTYxIC0zMykiLz4KPC9zdmc+Cg==',
+};
 const CLASSES=['エルフ','ロイヤル','ウィッチ','ドラゴン','ナイトメア','ビショップ','ネメシス'];
-const MODE_LABEL={bo1:'2デッキBO1',rank:'ランクBO1'};
+const MODE_LABEL={bo1:'2デッキBO1',rank:'BO1'};
 const MODE_CLS={bo1:'b-mode-bo1',rank:'b-mode-rank'};
 const KEY='sv_matchlog_v1';
 let S=null;
 
-function clsOpts(sel){ return CLASSES.map(c=>`<option${c===sel?' selected':''}>${c}</option>`).join(''); }
+function clsIcon(cls,size=16){ const src=CLASS_ICONS[cls]; return src?`<img src="${src}" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;opacity:0.85" alt="${cls}">`:''; }
+function clsOpts(sel){ return CLASSES.map(c=>`<option${c===sel?' selected':''  }>${c}</option>`).join(''); }
 function loadState(){ try{S=JSON.parse(localStorage.getItem(KEY))||fresh();}catch{S=fresh();} if(!S.sessions)S=fresh(); }
 function fresh(){ return {sessions:[],decks:[],nextSId:1,nextDId:1,nextRId:1}; }
 function save(){ localStorage.setItem(KEY,JSON.stringify(S)); }
@@ -229,6 +243,11 @@ function showPage(page){
 document.querySelectorAll('.nav-tab').forEach(t=>t.addEventListener('click',()=>showPage(t.dataset.page)));
 
 let currentSId=null;
+function getLatestSessionId(){
+  if(!S.sessions.length) return null;
+  const sorted=[...S.sessions].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id-a.id);
+  return sorted[0].id;
+}
 function renderTBar(){
   const el=document.getElementById('t-chips'); el.innerHTML='';
   [...S.sessions].reverse().forEach(s=>{
@@ -251,7 +270,7 @@ function openNewSession(){
     <div class="mfg"><label>名前</label><input id="m-sname" type="text" placeholder="ランクマッチ" /></div>
     <div class="mfg"><label>モード</label>
       <select id="m-smode" onchange="updateSessionDeckFields()">
-        <option value="rank" selected>ランクマッチBO1</option>
+        <option value="rank" selected>ランクBO1</option>
         <option value="bo1">2デッキBO1</option>
       </select>
     </div>
@@ -283,7 +302,7 @@ function updateSessionDeckFields(){
 }
 
 function createSession(){
-  const name=document.getElementById('m-sname').value.trim()||'ランクマッチ';
+  const name=document.getElementById('m-sname').value.trim()||(document.getElementById('m-smode').value==='bo1'?'2デッキBO1':'ランクマッチ');
   const mode=document.getElementById('m-smode').value;
   const date=document.getElementById('m-sdate').value;
   const deckIds=[];
@@ -294,8 +313,7 @@ function createSession(){
 }
 
 function getOrCreateDeck(cls,name){
-  const same=S.decks.filter(d=>d.className===cls);
-  const finalName=name||(same.length===0?cls:`${cls}(${same.length})`);
+  const finalName=name||cls;
   const existing=S.decks.find(d=>d.className===cls&&d.name===finalName);
   if(existing)return existing.id;
   const d={id:S.nextDId++,className:cls,name:finalName};
@@ -305,7 +323,7 @@ function getOrCreateDeck(cls,name){
 function renderHome(){
   const el=document.getElementById('home-content');
   if(!S.sessions.length){ el.innerHTML='<div class="empty"><p style="margin-bottom:12px">記録がありません</p><button class="btn btn-primary" onclick="openNewSession()">+ 新しい記録を作成</button></div>'; return; }
-  const sorted=[...S.sessions].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
+  const sorted=[...S.sessions].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id-a.id);
   el.innerHTML=sorted.map(s=>{
     const recs=s.records||[];
     const wins=recs.filter(r=>r.result==='win').length;
@@ -348,21 +366,29 @@ function saveEditSession(id){
 function deleteSession(id){
   if(!confirm('この記録を削除しますか？'))return;
   S.sessions=S.sessions.filter(s=>s.id!==id);
-  if(currentSId===id)currentSId=null;
+  if(currentSId===id) currentSId=getLatestSessionId();
   save(); renderHome(); renderTBar();
 }
 
 function renderRecord(){
+  // auto-select: currentSId が無ければ最新セッションを選ぶ
+  if(currentSId===null || !S.sessions.find(x=>x.id===currentSId)){
+    currentSId=getLatestSessionId();
+    renderTBar();
+  }
   const s=S.sessions.find(x=>x.id===currentSId);
   const af=document.getElementById('record-add-form');
   const tbl=document.getElementById('record-table');
   const stats=document.getElementById('record-stats');
   const title=document.getElementById('record-title');
-  if(!s){ af.innerHTML=''; tbl.innerHTML='<div class="empty">上のバーからセッションを選択するか、新しい記録を作成してください</div>'; stats.innerHTML=''; title.textContent='記録'; return; }
+  if(!s){
+    af.innerHTML=''; stats.innerHTML='';
+    tbl.innerHTML='<div class="empty"><p style="margin-bottom:12px">記録がありません</p><button class="btn btn-primary" onclick="openNewSession()">+ 新しい記録を作成</button></div>';
+    title.textContent='記録'; return;
+  }
   title.textContent=s.name;
-  const refresh=()=>{ renderRecordStats(stats,s); renderRecordTable(tbl,s); };
-  if(s.mode==='bo1') renderBO1Form(af,s,refresh);
-  else renderRankForm(af,s,refresh);
+  if(s.mode==='bo1') renderBO1Form(af,s);
+  else renderRankForm(af,s);
   renderRecordTable(tbl,s);
   renderRecordStats(stats,s);
 }
@@ -391,10 +417,10 @@ function renderRecordTable(el,s){
 }
 
 function sessionDeckOpts(s,defaultIdx){
-  return (s.deckIds||[]).map((id,i)=>{ const d=getDeck(id); return d?`<option value="${d.id}"${i===defaultIdx?' selected':''}>${d.name}</option>`:''; }).join('');
+  return (s.deckIds||[]).map((id,i)=>{ const d=getDeck(id); return d?`<option value="${d.id}"${i===defaultIdx?' selected':''  }>${d.name}</option>`:''; }).join('');
 }
 
-function renderBO1Form(el,s,refresh){
+function renderBO1Form(el,s){
   el.innerHTML=`<div class="add-form">
     <div class="fg"><label>自分のデッキ</label><select id="b1-my">${sessionDeckOpts(s,0)}</select></div>
     <div class="fg"><label>相手D1</label><select id="b1-o1" onchange="updateBO1Pick()">${clsOpts('エルフ')}</select></div>
@@ -428,8 +454,8 @@ function renderBO1Table(el,s){
   let h=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手の持ち込み</th><th>相手の選出</th><th>結果</th><th style="text-align:left">メモ</th><th></th></tr></thead><tbody>`;
   recs.forEach((r,i)=>{ const d=getDeck(r.myDeckId);
     h+=`<tr><td style="color:var(--text3)">${i+1}</td><td><span class="badge b-deck">${d?.name||'?'}</span></td>
-      <td><span class="badge b-opp">${r.oppClass1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${r.oppClass2}</span></td>
-      <td><span class="badge b-opp">${r.oppPick}</span></td>
+      <td><span class="badge b-opp" style="display:inline-flex;align-items:center;gap:4px">${clsIcon(r.oppClass1,13)}${r.oppClass1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp" style="display:inline-flex;align-items:center;gap:4px">${clsIcon(r.oppClass2,13)}${r.oppClass2}</span></td>
+      <td><span class="badge b-opp" style="display:inline-flex;align-items:center;gap:4px">${clsIcon(r.oppPick,13)}${r.oppPick}</span></td>
       <td><span class="badge b-${r.result}">${r.result==='win'?'勝':'負'}</span></td>
       <td class="memo-cell">${r.memo||''}</td>
       <td style="white-space:nowrap"><button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})">✎</button><button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})">✕</button></td></tr>`;
@@ -437,10 +463,11 @@ function renderBO1Table(el,s){
   h+='</tbody></table></div>'; el.innerHTML=h;
 }
 
-function renderRankForm(el,s,refresh){
+function renderRankForm(el,s){
   el.innerHTML=`<div class="add-form">
     <div class="fg"><label>自分のデッキ</label><select id="rk-my">${sessionDeckOpts(s,0)}</select></div>
     <div class="fg"><label>相手のクラス</label><select id="rk-opp">${clsOpts('エルフ')}</select></div>
+    <div class="fg"><label>先後</label><select id="rk-turn"><option value="first">先攻</option><option value="second">後攻</option></select></div>
     <div class="fg"><label>結果</label><select id="rk-res"><option value="win">勝</option><option value="lose">負</option></select></div>
     <button class="btn btn-primary" onclick="addRank(${s.id})">追加</button>
   </div>`;
@@ -450,6 +477,7 @@ function addRank(sid){
   if(!myDeckId)return alert('デッキを選択してください');
   const r={id:S.nextRId++,mode:'rank',myDeckId,
     oppClass:document.getElementById('rk-opp').value,
+    turn:document.getElementById('rk-turn').value,
     result:document.getElementById('rk-res').value,
     memo:'',createdAt:Date.now()};
   S.sessions.find(s=>s.id===sid).records.push(r); save(); renderRecord();
@@ -457,10 +485,12 @@ function addRank(sid){
 function renderRankTable(el,s){
   const recs=(s.records||[]).filter(r=>r.mode==='rank');
   if(!recs.length){ el.innerHTML='<div class="empty">記録がありません</div>'; return; }
-  let h=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手のクラス</th><th>結果</th><th style="text-align:left">メモ</th><th></th></tr></thead><tbody>`;
+  let h=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>自分のデッキ</th><th>相手のクラス</th><th>先後</th><th>結果</th><th style="text-align:left">メモ</th><th></th></tr></thead><tbody>`;
   recs.forEach((r,i)=>{ const d=getDeck(r.myDeckId);
+    const turnLabel=r.turn==='first'?'先攻':r.turn==='second'?'後攻':'-';
     h+=`<tr><td style="color:var(--text3)">${i+1}</td><td><span class="badge b-deck">${d?.name||'?'}</span></td>
-      <td><span class="badge b-opp">${r.oppClass}</span></td>
+      <td><span class="badge b-opp" style="display:inline-flex;align-items:center;gap:4px">${clsIcon(r.oppClass,13)}${r.oppClass}</span></td>
+      <td style="font-size:12px">${turnLabel}</td>
       <td><span class="badge b-${r.result}">${r.result==='win'?'勝':'負'}</span></td>
       <td class="memo-cell">${r.memo||''}</td>
       <td style="white-space:nowrap"><button class="icon-btn" onclick="openEditRecord(${s.id},${r.id})">✎</button><button class="icon-btn danger" onclick="delRecord(${s.id},${r.id})">✕</button></td></tr>`;
@@ -476,7 +506,7 @@ function openEditRecord(sid,rid){
       <div class="mfg"><label>自分のデッキ</label><select id="er-my">${sessionDeckOpts(s)}</select></div>
       <div class="mfg"><label>相手D1</label><select id="er-o1">${clsOpts(r.oppClass1)}</select></div>
       <div class="mfg"><label>相手D2</label><select id="er-o2">${clsOpts(r.oppClass2)}</select></div>
-      <div class="mfg"><label>相手の選出</label><select id="er-pick">${[...new Set([r.oppClass1,r.oppClass2])].map(c=>`<option${c===r.oppPick?' selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="mfg"><label>相手の選出</label><select id="er-pick">${[...new Set([r.oppClass1,r.oppClass2])].map(c=>`<option${c===r.oppPick?' selected':''  }>${c}</option>`).join('')}</select></div>
       <div class="mfg"><label>結果</label><select id="er-res"><option value="win"${r.result==='win'?' selected':''}>勝</option><option value="lose"${r.result==='lose'?' selected':''}>負</option></select></div>
       <div class="mfg"><label>メモ</label><textarea id="er-memo">${r.memo||''}</textarea></div>
       <div class="modal-footer"><button class="btn" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveEditBO1(${sid},${rid})">保存</button></div>`);
@@ -485,6 +515,7 @@ function openEditRecord(sid,rid){
     openModal(`<div class="modal-title">記録を編集</div>
       <div class="mfg"><label>自分のデッキ</label><select id="er-my">${sessionDeckOpts(s)}</select></div>
       <div class="mfg"><label>相手のクラス</label><select id="er-opp">${clsOpts(r.oppClass)}</select></div>
+      <div class="mfg"><label>先後</label><select id="er-turn"><option value="first"${r.turn==='first'?' selected':''}>先攻</option><option value="second"${r.turn==='second'?' selected':''}>後攻</option></select></div>
       <div class="mfg"><label>結果</label><select id="er-res"><option value="win"${r.result==='win'?' selected':''}>勝</option><option value="lose"${r.result==='lose'?' selected':''}>負</option></select></div>
       <div class="mfg"><label>メモ</label><textarea id="er-memo">${r.memo||''}</textarea></div>
       <div class="modal-footer"><button class="btn" onclick="closeModal()">キャンセル</button><button class="btn btn-primary" onclick="saveEditRank(${sid},${rid})">保存</button></div>`);
@@ -505,6 +536,7 @@ function saveEditRank(sid,rid){
   const r=S.sessions.find(x=>x.id===sid).records.find(x=>x.id===rid);
   r.myDeckId=Number(document.getElementById('er-my').value);
   r.oppClass=document.getElementById('er-opp').value;
+  r.turn=document.getElementById('er-turn').value;
   r.result=document.getElementById('er-res').value;
   r.memo=document.getElementById('er-memo').value;
   save(); closeModal(); renderRecord();
@@ -515,64 +547,194 @@ function delRecord(sid,rid){
   s.records=s.records.filter(r=>r.id!==rid); save(); renderRecord();
 }
 
+// ── 分析 ──────────────────────────────────────────────────────────
 function renderAnalysis(){
   const mode=document.getElementById('an-mode').value;
-  const prev=document.getElementById('an-session').value;
+  const prevSel=document.getElementById('an-session').value;
+  // セッション選択肢を更新（直前の選択を保持）
   document.getElementById('an-session').innerHTML='<option value="">すべて</option>'+
-    S.sessions.map(s=>`<option value="${s.id}"${String(s.id)===prev?' selected':''}>${s.name}</option>`).join('');
-  const tid=document.getElementById('an-session').value?Number(document.getElementById('an-session').value):null;
+    S.sessions.map(s=>`<option value="${s.id}"${String(s.id)===prevSel?' selected':''  }>${s.name}</option>`).join('');
+  const tidStr=document.getElementById('an-session').value;
+  const tid=tidStr?Number(tidStr):null;
+
   let recs=[];
   S.sessions.forEach(s=>{
     (s.records||[]).forEach(r=>{
       if(tid&&s.id!==tid)return;
       if(mode!=='all'&&r.mode!==mode)return;
-      recs.push(r);
+      recs.push({...r,_sid:s.id});
     });
   });
+
   const el=document.getElementById('analysis-content');
   if(!recs.length){ el.innerHTML='<div class="empty">分析データがありません</div>'; return; }
+
+  // モード別に振り分け
+  const rankRecs=recs.filter(r=>r.mode==='rank');
+  const bo1Recs=recs.filter(r=>r.mode==='bo1');
+
+  let h='';
+
+  // ── ランクBO1分析 ─────────────────────────────────────────────
+  if(rankRecs.length){
+    h+=renderRankAnalysis(rankRecs);
+  }
+
+  // ── 2デッキBO1分析 ────────────────────────────────────────────
+  if(bo1Recs.length){
+    h+=renderBO1Analysis(bo1Recs);
+  }
+
+  el.innerHTML=h;
+}
+
+function renderRankAnalysis(recs){
+  const total=recs.length;
+  const wins=recs.filter(r=>r.result==='win').length;
+  const firstRecs=recs.filter(r=>r.turn==='first');
+  const secondRecs=recs.filter(r=>r.turn==='second');
+  const fWins=firstRecs.filter(r=>r.result==='win').length;
+  const sWins=secondRecs.filter(r=>r.result==='win').length;
+
+  // デッキ別集計
+  const byDeck={};
+  recs.forEach(r=>{
+    const id=r.myDeckId;
+    if(!byDeck[id]) byDeck[id]={w:0,l:0,fw:0,fl:0,sw:0,sl:0};
+    const d=byDeck[id];
+    const win=r.result==='win';
+    win?d.w++:d.l++;
+    if(r.turn==='first'){ win?d.fw++:d.fl++; }
+    else if(r.turn==='second'){ win?d.sw++:d.sl++; }
+  });
+
+  // 相手クラス別集計
+  const byOpp={};
+  recs.forEach(r=>{
+    const c=r.oppClass;
+    if(!byOpp[c]) byOpp[c]={w:0,l:0,fw:0,fl:0,sw:0,sl:0};
+    const d=byOpp[c];
+    const win=r.result==='win';
+    win?d.w++:d.l++;
+    if(r.turn==='first'){ win?d.fw++:d.fl++; }
+    else if(r.turn==='second'){ win?d.sw++:d.sl++; }
+  });
+
+  // デッキ別ヘッダー行の数
+  const deckEntries=Object.entries(byDeck);
+  const oppEntries=Object.entries(byOpp).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l));
+
+  let h=`<div class="sec"><div class="analysis-sec-title">ランクBO1</div>`;
+
+  // 総合サマリーカード
+  const summaryCards=[
+    {label:'総合',w:wins,l:total-wins},
+    {label:'先攻',w:fWins,l:firstRecs.length-fWins},
+    {label:'後攻',w:sWins,l:secondRecs.length-sWins},
+  ];
+  const cols=Math.min(summaryCards.length+deckEntries.length,5);
+  h+=`<div class="stat-grid" style="grid-template-columns:repeat(${cols},1fr);margin-bottom:1rem">`;
+  summaryCards.forEach(c=>{ const t=c.w+c.l;
+    h+=`<div class="stat-card"><div class="stat-label">${c.label}</div><div class="stat-val" style="font-size:16px">${wl(c.w,c.l)}</div><div class="stat-sub">${pct(c.w,t)}</div></div>`;
+  });
+  deckEntries.forEach(([id,d])=>{ const dk=getDeck(Number(id)),t=d.w+d.l;
+    h+=`<div class="stat-card"><div class="stat-label">${dk?.name||'?'}</div><div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t)}</div></div>`;
+  });
+  h+='</div>';
+
+  // 相手クラス別テーブル（画像の形式）
+  if(oppEntries.length){
+    h+=`<div style="margin-bottom:1rem">
+    <div class="tbl-wrap"><table class="rank-an-tbl">
+      <thead><tr>
+        <th style="text-align:left">相手クラス</th>
+        <th>試合</th><th>勝数</th><th>敗数</th>
+        <th>勝率</th>
+        <th>先攻勝数</th><th>先攻敗数</th><th>先攻勝率</th>
+        <th>後攻勝数</th><th>後攻敗数</th><th>後攻勝率</th>
+      </tr></thead><tbody>`;
+    // 総合行
+    h+=`<tr style="font-weight:500;background:var(--bg2)">
+      <td style="text-align:left;font-weight:600">総合</td>
+      <td>${total}</td><td>${wins}</td><td>${total-wins}</td>
+      <td>${pct(wins,total)}</td>
+      <td>${fWins}</td><td>${firstRecs.length-fWins}</td><td>${pct(fWins,firstRecs.length)}</td>
+      <td>${sWins}</td><td>${secondRecs.length-sWins}</td><td>${pct(sWins,secondRecs.length)}</td>
+    </tr>`;
+    oppEntries.forEach(([cls,d])=>{
+      const t=d.w+d.l, ft=d.fw+d.fl, st=d.sw+d.sl;
+      h+=`<tr>
+        <td style="text-align:left"><span style="display:inline-flex;align-items:center;gap:4px">${clsIcon(cls,14)}${cls}</span></td>
+        <td>${t}</td><td>${d.w}</td><td>${d.l}</td>
+        <td>${pct(d.w,t)}</td>
+        <td>${d.fw}</td><td>${d.fl}</td><td>${pct(d.fw,ft)}</td>
+        <td>${d.sw}</td><td>${d.sl}</td><td>${pct(d.sw,st)}</td>
+      </tr>`;
+    });
+    h+='</tbody></table></div></div>';
+
+    // 相手クラス別 勝率バーチャート
+    h+=`<div style="margin-bottom:1rem"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">相手クラス別 勝率</div><div class="bar-chart">`;
+    // 勝率でソート
+    const sortedOpp=[...oppEntries].sort((a,b)=>{
+      const pa=a[1].w/(a[1].w+a[1].l)||0, pb=b[1].w/(b[1].w+b[1].l)||0; return pb-pa;
+    });
+    sortedOpp.forEach(([cls,d])=>{
+      const t=d.w+d.l, p=t>0?Math.round(d.w/t*100):0;
+      h+=`<div class="bar-row">
+        <div class="bar-label">${cls}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div>
+        <div class="bar-pct">${p}%</div>
+        <div class="bar-cnt">${d.w}/${t}</div>
+      </div>`;
+    });
+    h+='</div></div>';
+  }
+
+  h+='</div>';
+  return h;
+}
+
+function renderBO1Analysis(recs){
   const total=recs.length, wins=recs.filter(r=>r.result==='win').length;
   const byDeck={}, byOppCls={}, byCombo={};
   recs.forEach(r=>{
     const res=r.result;
     if(!byDeck[r.myDeckId])byDeck[r.myDeckId]={w:0,l:0};
     res==='win'?byDeck[r.myDeckId].w++:byDeck[r.myDeckId].l++;
-    const opps=r.oppPick?[r.oppPick]:r.oppClass?[r.oppClass]:[];
-    opps.forEach(c=>{ if(!byOppCls[c])byOppCls[c]={w:0,l:0}; res==='win'?byOppCls[c].w++:byOppCls[c].l++; });
+    if(r.oppPick){ if(!byOppCls[r.oppPick])byOppCls[r.oppPick]={w:0,l:0}; res==='win'?byOppCls[r.oppPick].w++:byOppCls[r.oppPick].l++; }
     if(r.oppClass1&&r.oppClass2){ const k=[r.oppClass1,r.oppClass2].sort().join('+'); if(!byCombo[k])byCombo[k]={w:0,l:0}; res==='win'?byCombo[k].w++:byCombo[k].l++; }
   });
   const cols=Math.min(1+Object.keys(byDeck).length,4);
-  let h=`<div class="sec"><div class="analysis-sec-title">総合</div>
+  let h=`<div class="sec"><div class="analysis-sec-title">2デッキBO1</div>
     <div class="stat-grid" style="grid-template-columns:repeat(${cols},1fr)">
       <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div><div class="stat-sub">${total}試合 / ${pct(wins,total)}</div></div>
       ${Object.entries(byDeck).map(([id,d])=>{ const dk=getDeck(Number(id)),t2=d.w+d.l; return `<div class="stat-card"><div class="stat-label">${dk?.name||'?'}</div><div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t2)}</div></div>`; }).join('')}
-    </div></div>`;
+    </div>`;
   if(Object.keys(byOppCls).length){
-    h+=`<div class="sec"><div class="analysis-sec-title">相手クラス別</div><div class="opp-grid">`;
+    h+=`<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">相手の選出別</div><div class="opp-grid">`;
     Object.entries(byOppCls).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([c,d])=>{ const t2=d.w+d.l;
-      h+=`<div class="opp-card"><div class="opp-card-name">${c}</div><div class="opp-card-row"><span>戦績</span><span style="font-weight:500">${wl(d.w,d.l)}</span></div><div class="opp-card-row"><span>勝率</span><span style="font-weight:500">${pct(d.w,t2)}</span></div></div>`;
+      h+=`<div class="opp-card"><div class="opp-card-name" style="display:flex;align-items:center;gap:5px">${clsIcon(c,16)}<span>${c}</span></div><div class="opp-card-row"><span>戦績</span><span style="font-weight:500">${wl(d.w,d.l)}</span></div><div class="opp-card-row"><span>勝率</span><span style="font-weight:500">${pct(d.w,t2)}</span></div></div>`;
     });
     h+='</div></div>';
   }
   if(Object.keys(byCombo).length){
-    h+=`<div class="sec"><div class="analysis-sec-title">相手の持ち込み組み合わせ別</div><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">持ち込み</th><th>試合</th><th>戦績</th><th>勝率</th></tr></thead><tbody>`;
+    h+=`<div style="margin-top:8px"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">相手の持ち込み組み合わせ別</div><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">持ち込み</th><th>試合</th><th>戦績</th><th>勝率</th></tr></thead><tbody>`;
     Object.entries(byCombo).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).forEach(([k,d])=>{ const [c1,c2]=k.split('+'),t2=d.w+d.l;
-      h+=`<tr><td style="text-align:left"><span class="badge b-opp">${c1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp">${c2}</span></td><td>${t2}</td><td>${wl(d.w,d.l)}</td><td>${pct(d.w,t2)}</td></tr>`;
+      h+=`<tr><td style="text-align:left"><span class="badge b-opp" style="display:inline-flex;align-items:center;gap:4px">${clsIcon(c1,13)}${c1}</span> <span style="color:var(--text3);font-size:10px">+</span> <span class="badge b-opp" style="display:inline-flex;align-items:center;gap:4px">${clsIcon(c2,13)}${c2}</span></td><td>${t2}</td><td>${wl(d.w,d.l)}</td><td>${pct(d.w,t2)}</td></tr>`;
     });
     h+='</tbody></table></div></div>';
   }
-  el.innerHTML=h;
+  h+='</div>';
+  return h;
 }
 
+// ── 設定 ──────────────────────────────────────────────────────────
 function renderSettings(){ renderDeckList(); }
 function renderDeckList(){
   const el=document.getElementById('deck-list');
   if(!S.decks.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 12px">デッキがありません</div>'; return; }
   el.innerHTML=S.decks.map(d=>`<div class="deck-entry"><div class="deck-entry-info"><span class="badge b-opp">${d.className}</span><input class="deck-name-inp" type="text" value="${d.name}" onchange="updateDeckName(${d.id},this.value)" /></div><button class="icon-btn danger" onclick="delDeck(${d.id})">✕</button></div>`).join('');
-}
-function addDeck(){
-  getOrCreateDeck(document.getElementById('new-cls').value, document.getElementById('new-dname').value.trim());
-  document.getElementById('new-dname').value=''; renderDeckList();
 }
 function updateDeckName(id,name){ const d=S.decks.find(x=>x.id===id); if(d){d.name=name;save();} }
 function delDeck(id){ S.decks=S.decks.filter(d=>d.id!==id); save(); renderDeckList(); }
@@ -581,7 +743,7 @@ function shareTweet(){
   const s=S.sessions.find(x=>x.id===currentSId); if(!s)return;
   const recs=s.records||[], wins=recs.filter(r=>r.result==='win').length;
   const text=`【${s.name}】\n戦績: ${wl(wins,recs.length-wins)} (${recs.length}試合)\n#シャドウバース #ShadowverseConnect`;
-  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,'_blank');
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,"_blank");
 }
 
 function saveImage(){
@@ -612,7 +774,7 @@ function exportData(){
 function importData(input){
   const file=input.files[0]; if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{ try{ S={...fresh(),...JSON.parse(e.target.result)}; save(); renderTBar(); renderSettings(); alert('インポートしました'); }catch{ alert('読み込みに失敗しました'); } };
+  reader.onload=e=>{ try{ S={...fresh(),...JSON.parse(e.target.result)}; save(); currentSId=getLatestSessionId(); renderTBar(); renderSettings(); alert('インポートしました'); }catch{ alert('読み込みに失敗しました'); } };
   reader.readAsText(file);
 }
 
@@ -620,7 +782,10 @@ function getDeck(id){ return S.decks.find(d=>d.id===id)||null; }
 function wl(w,l){ return `${w}勝${l}敗`; }
 function pct(w,t){ return t>0?Math.round(w/t*100)+'%':'-'; }
 
-loadState(); renderTBar(); renderHome();
+loadState();
+// 初期currentSId: 最新セッション
+if(currentSId===null) currentSId=getLatestSessionId();
+renderTBar(); renderHome();
 </script>
 </body>
 </html>
