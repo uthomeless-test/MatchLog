@@ -115,15 +115,6 @@
     .rank-an-tbl td:first-child { text-align: left; font-weight: 500; }
     .rank-an-tbl tr:hover td { background: var(--bg2); }
 
-    /* bar chart */
-    .bar-chart { display: flex; flex-direction: column; gap: 6px; }
-    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-    .bar-label { width: 80px; flex-shrink: 0; text-align: right; color: var(--text2); font-size: 11px; }
-    .bar-track { flex: 1; background: var(--bg3); border-radius: 4px; height: 18px; overflow: hidden; }
-    .bar-fill { height: 100%; background: var(--blue); border-radius: 4px; display: flex; align-items: center; padding-left: 6px; }
-    .bar-pct { font-size: 11px; color: var(--text2); width: 38px; flex-shrink: 0; }
-    .bar-cnt { font-size: 10px; color: var(--text3); width: 40px; flex-shrink: 0; text-align: right; }
-
     @media(max-width:600px){ .nav-tab { padding: 6px 10px; font-size: 12px; } }
   </style>
 </head>
@@ -563,58 +554,48 @@ function delRecord(sid,rid){
 // ── 分析 ──────────────────────────────────────────────────────────
 let analysisInitialized=false;
 function renderAnalysis(){
+  const modeEl=document.getElementById('an-mode');
+  const sessionEl=document.getElementById('an-session');
+
   // 初回: currentSId のセッションのモードとセッション選択を引き継ぐ
   if(!analysisInitialized){
     analysisInitialized=true;
-    const initSid=currentSId?String(currentSId):'';
     const initSession=S.sessions.find(x=>x.id===currentSId);
-    // モードを合わせる（bo1/rank のみ）
     if(initSession&&(initSession.mode==='bo1'||initSession.mode==='rank')){
-      document.getElementById('an-mode').value=initSession.mode;
+      modeEl.value=initSession.mode;
     }
-    document.getElementById('an-session').innerHTML='<option value="">すべて</option>'+
-      S.sessions.map(s=>`<option value="${s.id}"${String(s.id)===initSid?' selected':''}>${s.name}</option>`).join('');
-  } else {
-    const prevSel=document.getElementById('an-session').value;
-    document.getElementById('an-session').innerHTML='<option value="">すべて</option>'+
-      S.sessions.map(s=>`<option value="${s.id}"${String(s.id)===prevSel?' selected':''}>${s.name}</option>`).join('');
   }
-  const mode=document.getElementById('an-mode').value;
-  const tidStr=document.getElementById('an-session').value;
+
+  const mode=modeEl.value;
+  const prevSel=sessionEl.value;
+  // モードに合うセッションだけ表示
+  const validSessions=S.sessions.filter(s=>s.mode===mode);
+  sessionEl.innerHTML='<option value="">すべて</option>'+
+    validSessions.map(s=>`<option value="${s.id}"${String(s.id)===prevSel?' selected':''}>${s.name}</option>`).join('');
+
+  const tidStr=sessionEl.value;
   const tid=tidStr?Number(tidStr):null;
+  const showAllSessions=!tid; // 全セッション表示中かどうか
 
   let recs=[];
   S.sessions.forEach(s=>{
+    if(s.mode!==mode)return;
     (s.records||[]).forEach(r=>{
       if(tid&&s.id!==tid)return;
-      if(r.mode!==mode)return;
-      recs.push({...r,_sid:s.id});
+      recs.push({...r,_sid:s.id,_sname:s.name});
     });
   });
 
   const el=document.getElementById('analysis-content');
   if(!recs.length){ el.innerHTML='<div class="empty">分析データがありません</div>'; return; }
 
-  // モード別に振り分け
-  const rankRecs=recs.filter(r=>r.mode==='rank');
-  const bo1Recs=recs.filter(r=>r.mode==='bo1');
-
   let h='';
-
-  // ── ランクBO1分析 ─────────────────────────────────────────────
-  if(rankRecs.length){
-    h+=renderRankAnalysis(rankRecs);
-  }
-
-  // ── 2デッキBO1分析 ────────────────────────────────────────────
-  if(bo1Recs.length){
-    h+=renderBO1Analysis(bo1Recs);
-  }
-
+  if(mode==='rank') h+=renderRankAnalysis(recs, showAllSessions);
+  else              h+=renderBO1Analysis(recs, showAllSessions);
   el.innerHTML=h;
 }
 
-function renderRankAnalysis(recs){
+function renderRankAnalysis(recs, showAllSessions){
   const total=recs.length;
   const wins=recs.filter(r=>r.result==='win').length;
   const firstRecs=recs.filter(r=>r.turn==='first');
@@ -622,16 +603,17 @@ function renderRankAnalysis(recs){
   const fWins=firstRecs.filter(r=>r.result==='win').length;
   const sWins=secondRecs.filter(r=>r.result==='win').length;
 
-  // デッキ別集計
+  // デッキ別集計（セッション情報も保持）
   const byDeck={};
   recs.forEach(r=>{
     const id=r.myDeckId;
-    if(!byDeck[id]) byDeck[id]={w:0,l:0,fw:0,fl:0,sw:0,sl:0};
+    if(!byDeck[id]) byDeck[id]={w:0,l:0,fw:0,fl:0,sw:0,sl:0,sessions:new Set()};
     const d=byDeck[id];
     const win=r.result==='win';
     win?d.w++:d.l++;
     if(r.turn==='first'){ win?d.fw++:d.fl++; }
     else if(r.turn==='second'){ win?d.sw++:d.sl++; }
+    if(r._sname) d.sessions.add(r._sname);
   });
 
   // 相手クラス別集計
@@ -646,44 +628,73 @@ function renderRankAnalysis(recs){
     else if(r.turn==='second'){ win?d.sw++:d.sl++; }
   });
 
-  // デッキ別ヘッダー行の数
   const deckEntries=Object.entries(byDeck);
   const oppEntries=Object.entries(byOpp).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l));
 
   let h=`<div class="sec"><div class="analysis-sec-title">ランクBO1</div>`;
 
-  // 総合サマリーカード
+  // 総合サマリーカード（先攻/後攻）
   const summaryCards=[
-    {label:'総合',w:wins,l:total-wins},
-    {label:'先攻',w:fWins,l:firstRecs.length-fWins},
-    {label:'後攻',w:sWins,l:secondRecs.length-sWins},
+    {label:'総合',icon:'',w:wins,l:total-wins},
+    {label:'先攻',icon:'',w:fWins,l:firstRecs.length-fWins},
+    {label:'後攻',icon:'',w:sWins,l:secondRecs.length-sWins},
   ];
   const cols=Math.min(summaryCards.length+deckEntries.length,5);
   h+=`<div class="stat-grid" style="grid-template-columns:repeat(${cols},1fr);margin-bottom:1rem">`;
   summaryCards.forEach(c=>{ const t=c.w+c.l;
     h+=`<div class="stat-card"><div class="stat-label">${c.label}</div><div class="stat-val" style="font-size:16px">${wl(c.w,c.l)}</div><div class="stat-sub">${pct(c.w,t)}</div></div>`;
   });
-  deckEntries.forEach(([id,d])=>{ const dk=getDeck(Number(id)),t=d.w+d.l;
-    h+=`<div class="stat-card"><div class="stat-label">${dk?.name||'?'}</div><div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t)}</div></div>`;
+  deckEntries.forEach(([id,d])=>{
+    const dk=getDeck(Number(id)); const t=d.w+d.l;
+    const icon=dk?clsIcon(dk.className,16):'';
+    const sesLabel=showAllSessions&&d.sessions.size>0?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${[...d.sessions].join(', ')}</div>`:'';
+    h+=`<div class="stat-card"><div class="stat-label" style="display:flex;align-items:center;justify-content:center;gap:4px">${icon}<span>${dk?.name||'?'}</span></div>${sesLabel}<div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t)}</div></div>`;
   });
   h+='</div>';
 
-  // 相手クラス別テーブル（画像の形式）
-  if(oppEntries.length){
-    h+=`<div style="margin-bottom:1rem">
-    <div class="tbl-wrap"><table class="rank-an-tbl">
+  // 使用デッキ別戦績テーブル
+  if(deckEntries.length){
+    h+=`<div style="margin-bottom:1rem"><div class="tbl-wrap"><table class="rank-an-tbl">
       <thead><tr>
-        <th style="text-align:left">相手クラス</th>
-        <th>試合</th><th>勝数</th><th>敗数</th>
-        <th>勝率</th>
+        <th style="text-align:left">使用デッキ</th>
+        <th>試合</th><th>勝数</th><th>敗数</th><th>勝率</th>
         <th>先攻勝数</th><th>先攻敗数</th><th>先攻勝率</th>
         <th>後攻勝数</th><th>後攻敗数</th><th>後攻勝率</th>
       </tr></thead><tbody>`;
     // 総合行
+    const fTotal=firstRecs.length, sTotal=secondRecs.length;
     h+=`<tr style="font-weight:500;background:var(--bg2)">
       <td style="text-align:left;font-weight:600">総合</td>
-      <td>${total}</td><td>${wins}</td><td>${total-wins}</td>
-      <td>${pct(wins,total)}</td>
+      <td>${total}</td><td>${wins}</td><td>${total-wins}</td><td>${pct(wins,total)}</td>
+      <td>${fWins}</td><td>${fTotal-fWins}</td><td>${pct(fWins,fTotal)}</td>
+      <td>${sWins}</td><td>${sTotal-sWins}</td><td>${pct(sWins,sTotal)}</td>
+    </tr>`;
+    deckEntries.forEach(([id,d])=>{
+      const dk=getDeck(Number(id)); const t=d.w+d.l, ft=d.fw+d.fl, st=d.sw+d.sl;
+      const icon=dk?clsIcon(dk.className,14):'';
+      const sesLabel=showAllSessions&&d.sessions.size>0?`<div style="font-size:10px;color:var(--text3)">${[...d.sessions].join(', ')}</div>`:'';
+      h+=`<tr>
+        <td style="text-align:left"><span style="display:inline-flex;align-items:center;gap:4px">${icon}${dk?.name||'?'}</span>${sesLabel}</td>
+        <td>${t}</td><td>${d.w}</td><td>${d.l}</td><td>${pct(d.w,t)}</td>
+        <td>${d.fw}</td><td>${d.fl}</td><td>${pct(d.fw,ft)}</td>
+        <td>${d.sw}</td><td>${d.sl}</td><td>${pct(d.sw,st)}</td>
+      </tr>`;
+    });
+    h+='</tbody></table></div></div>';
+  }
+
+  // 相手クラス別テーブル
+  if(oppEntries.length){
+    h+=`<div style="margin-bottom:1rem"><div class="tbl-wrap"><table class="rank-an-tbl">
+      <thead><tr>
+        <th style="text-align:left">相手クラス</th>
+        <th>試合</th><th>勝数</th><th>敗数</th><th>勝率</th>
+        <th>先攻勝数</th><th>先攻敗数</th><th>先攻勝率</th>
+        <th>後攻勝数</th><th>後攻敗数</th><th>後攻勝率</th>
+      </tr></thead><tbody>`;
+    h+=`<tr style="font-weight:500;background:var(--bg2)">
+      <td style="text-align:left;font-weight:600">総合</td>
+      <td>${total}</td><td>${wins}</td><td>${total-wins}</td><td>${pct(wins,total)}</td>
       <td>${fWins}</td><td>${firstRecs.length-fWins}</td><td>${pct(fWins,firstRecs.length)}</td>
       <td>${sWins}</td><td>${secondRecs.length-sWins}</td><td>${pct(sWins,secondRecs.length)}</td>
     </tr>`;
@@ -691,51 +702,41 @@ function renderRankAnalysis(recs){
       const t=d.w+d.l, ft=d.fw+d.fl, st=d.sw+d.sl;
       h+=`<tr>
         <td style="text-align:left"><span style="display:inline-flex;align-items:center;gap:4px">${clsIcon(cls,14)}${cls}</span></td>
-        <td>${t}</td><td>${d.w}</td><td>${d.l}</td>
-        <td>${pct(d.w,t)}</td>
+        <td>${t}</td><td>${d.w}</td><td>${d.l}</td><td>${pct(d.w,t)}</td>
         <td>${d.fw}</td><td>${d.fl}</td><td>${pct(d.fw,ft)}</td>
         <td>${d.sw}</td><td>${d.sl}</td><td>${pct(d.sw,st)}</td>
       </tr>`;
     });
     h+='</tbody></table></div></div>';
-
-    // 相手クラス別 勝率バーチャート
-    h+=`<div style="margin-bottom:1rem"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">相手クラス別 勝率</div><div class="bar-chart">`;
-    // 勝率でソート
-    const sortedOpp=[...oppEntries].sort((a,b)=>{
-      const pa=a[1].w/(a[1].w+a[1].l)||0, pb=b[1].w/(b[1].w+b[1].l)||0; return pb-pa;
-    });
-    sortedOpp.forEach(([cls,d])=>{
-      const t=d.w+d.l, p=t>0?Math.round(d.w/t*100):0;
-      h+=`<div class="bar-row">
-        <div class="bar-label">${cls}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div>
-        <div class="bar-pct">${p}%</div>
-        <div class="bar-cnt">${d.w}/${t}</div>
-      </div>`;
-    });
-    h+='</div></div>';
   }
 
   h+='</div>';
   return h;
 }
 
-function renderBO1Analysis(recs){
+function renderBO1Analysis(recs, showAllSessions){
   const total=recs.length, wins=recs.filter(r=>r.result==='win').length;
   const byDeck={}, byOppCls={}, byCombo={};
   recs.forEach(r=>{
     const res=r.result;
-    if(!byDeck[r.myDeckId])byDeck[r.myDeckId]={w:0,l:0};
+    if(!byDeck[r.myDeckId]) byDeck[r.myDeckId]={w:0,l:0,sessions:new Set()};
     res==='win'?byDeck[r.myDeckId].w++:byDeck[r.myDeckId].l++;
+    if(r._sname) byDeck[r.myDeckId].sessions.add(r._sname);
     if(r.oppPick){ if(!byOppCls[r.oppPick])byOppCls[r.oppPick]={w:0,l:0}; res==='win'?byOppCls[r.oppPick].w++:byOppCls[r.oppPick].l++; }
     if(r.oppClass1&&r.oppClass2){ const k=[r.oppClass1,r.oppClass2].sort().join('+'); if(!byCombo[k])byCombo[k]={w:0,l:0}; res==='win'?byCombo[k].w++:byCombo[k].l++; }
   });
-  const cols=Math.min(1+Object.keys(byDeck).length,4);
+
+  const deckEntries=Object.entries(byDeck);
+  const cols=Math.min(1+deckEntries.length,5);
   let h=`<div class="sec"><div class="analysis-sec-title">2デッキBO1</div>
-    <div class="stat-grid" style="grid-template-columns:repeat(${cols},1fr)">
+    <div class="stat-grid" style="grid-template-columns:repeat(${cols},1fr);margin-bottom:1rem">
       <div class="stat-card"><div class="stat-label">戦績</div><div class="stat-val" style="font-size:16px">${wl(wins,total-wins)}</div><div class="stat-sub">${total}試合 / ${pct(wins,total)}</div></div>
-      ${Object.entries(byDeck).map(([id,d])=>{ const dk=getDeck(Number(id)),t2=d.w+d.l; return `<div class="stat-card"><div class="stat-label">${dk?.name||'?'}</div><div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t2)}</div></div>`; }).join('')}
+      ${deckEntries.map(([id,d])=>{
+        const dk=getDeck(Number(id)); const t2=d.w+d.l;
+        const icon=dk?clsIcon(dk.className,16):'';
+        const sesLabel=showAllSessions&&d.sessions.size>0?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${[...d.sessions].join(', ')}</div>`:'';
+        return `<div class="stat-card"><div class="stat-label" style="display:flex;align-items:center;justify-content:center;gap:4px">${icon}<span>${dk?.name||'?'}</span></div>${sesLabel}<div class="stat-val" style="font-size:16px">${wl(d.w,d.l)}</div><div class="stat-sub">${pct(d.w,t2)}</div></div>`;
+      }).join('')}
     </div>`;
   if(Object.keys(byOppCls).length){
     h+=`<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">相手の選出別</div><div class="opp-grid">`;
